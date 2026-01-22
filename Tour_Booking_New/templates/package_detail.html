@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}{{ package.name }} - TourBook{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('packages') }}">Packages</a></li>
+                <li class="breadcrumb-item active">{{ package.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Package Details -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="package-detail-image" 
+                 style="background-image: url('{{ package.image_url }}'); height: 400px; background-size: cover; background-position: center; border-radius: 15px 15px 0 0;">
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h2 class="card-title">{{ package.name }}</h2>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-map-marker-alt text-danger"></i> {{ package.destination }}
+                            • <i class="fas fa-calendar-day text-primary"></i> {{ package.duration_days }} days
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <h3 class="text-primary mb-0">₹{{ package.price }}</h3>
+                        <small class="text-muted">per person</small>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <span class="badge bg-secondary fs-6">{{ package.category }}</span>
+                    <span class="badge bg-{{ 'success' if package.available_slots > 5 else 'warning' if package.available_slots > 0 else 'danger' }} fs-6 ms-2">
+                        {{ package.available_slots }} slots available
+                    </span>
+                </div>
+
+                <div class="package-description mb-4">
+                    <h5>About This Tour</h5>
+                    <p class="lead">{{ package.description }}</p>
+                </div>
+
+                <!-- Booking Form -->
+                {% if package.available_slots > 0 %}
+                <div class="booking-section card bg-light">
+                    <div class="card-body">
+                        <h5><i class="fas fa-suitcase"></i> Book This Package</h5>
+                        <!-- Change the form action from book_package to book_package route -->
+                         <form method="POST" action="{{ url_for('book_package', package_id=package.id) }}">
+                            <div class="row align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Number of Travelers</label>
+                                    <select class="form-select" name="travelers_count" required>
+                                        {% for i in range(1, 11) %}
+                                        <option value="{{ i }}">{{ i }} traveler{% if i > 1 %}s{% endif %}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Travel Date</label>
+                                    <input type="date" class="form-control" name="travel_date" min="{{ today }}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-check"></i> Book Now
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-center">
+                                <small class="text-muted">Total: <strong id="totalAmount">₹{{ package.price }}</strong></small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> This package is currently fully booked.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Replace the feedback section in package_detail.html with this -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-star me-2"></i>Customer Reviews
+            {% if avg_rating > 0 %}
+            <span class="badge bg-primary ms-2">{{ avg_rating }}/5</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if feedback %}
+            {% for review in feedback %}
+            <div class="review-item mb-4 pb-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>{{ review.full_name or review.username }}</strong>
+                        <div class="star-rating mt-1">
+                            {% for i in range(1, 6) %}
+                                {% if i <= review.rating %}
+                                    <i class="fas fa-star text-warning"></i>
+                                {% else %}
+                                    <i class="far fa-star text-warning"></i>
+                                {% endif %}
+                            {% endfor %}
+                            <span class="text-muted ms-2">{{ review.rating }}/5</span>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        {{ review.created_at.strftime('%d %b %Y') if review.created_at }}
+                    </small>
+                </div>
+                {% if review.comment %}
+                <p class="mt-2 mb-0">{{ review.comment }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted text-center py-3">No reviews yet. Be the first to review this package!</p>
+        {% endif %}
+    </div>
+</div>
+
+                <!-- Submit Feedback Form -->
+                {% if session.user_id %}
+                <div class="feedback-form-section mb-4">
+                    <h6>Share Your Experience</h6>
+                    <form method="POST" action="{{ url_for('submit_feedback') }}">
+                        <input type="hidden" name="package_id" value="{{ package.id }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Your Rating</label>
+                            <div class="rating-stars mb-2">
+                                {% for i in range(5, 0, -1) %}
+                                <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" class="d-none" required>
+                                <label for="star{{ i }}" class="star-label" data-rating="{{ i }}">
+                                    <i class="fas fa-star fa-2x"></i>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="rating-text text-muted small" id="ratingText">
+                                Select your rating (1-5 stars)
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Your Review</label>
+                            <textarea class="form-control" name="comment" rows="4" 
+                                      placeholder="Share your experience with this tour package..." 
+                                      maxlength="500" required></textarea>
+                            <div class="form-text">
+                                <span class="char-count">0</span>/500 characters
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-paper-plane"></i> Submit Review
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Please <a href="{{ url_for('login') }}">login</a> to submit your feedback.
+                </div>
+                {% endif %}
+
+                <!-- Existing Reviews -->
+                <div class="reviews-section">
+                    <h6>Recent Reviews</h6>
+                    {% if feedback %}
+                        {% for review in feedback %}
+                        <div class="review-item border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong>{{ review.full_name or review.username }}</strong>
+                                    <div class="rating-stars">
+                                        {% for i in range(1, 6) %}
+                                        <i class="fas fa-star{{ ' text-warning' if i <= review.rating else ' text-muted' }}"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ review.created_at.strftime('%d %b %Y') }}</small>
+                            </div>
+                            <p class="mb-0">{{ review.comment }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No reviews yet. Be the first to share your experience!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Package Highlights -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-star"></i> Package Highlights</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Guided tours</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Accommodation included</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Breakfast provided</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Transportation</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> 24/7 support</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Similar Packages -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-compass"></i> Similar Packages</h6>
+            </div>
+            <div class="card-body">
+                <div class="similar-packages">
+                    <!-- This would be populated with similar packages from database -->
+                    <p class="text-muted">Explore other {{ package.category }} packages</p>
+                    <a href="{{ url_for('packages') }}?category={{ package.category }}" class="btn btn-outline-primary btn-sm">
+                        View All {{ package.category }} Tours
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Star rating functionality
+    const starLabels = document.querySelectorAll('.star-label');
+    const ratingText = document.getElementById('ratingText');
+    
+    starLabels.forEach(label => {
+        label.addEventListener('click', function() {
+            const rating = this.getAttribute('data-rating');
+            
+            // Update stars
+            starLabels.forEach(star => {
+                const starRating = star.getAttribute('data-rating');
+                const icon = star.querySelector('i');
+                
+                if (starRating <= rating) {
+                    icon.className = 'fas fa-star fa-2x text-warning';
+                } else {
+                    icon.className = 'fas fa-star fa-2x text-muted';
+                }
+            });
+            
+            // Update rating text
+            const ratingMessages = {
+                1: "Poor - We're sorry to hear that",
+                2: "Fair - Thanks for your honest feedback",
+                3: "Good - Glad you had a decent experience",
+                4: "Very Good - Happy to hear you enjoyed it!",
+                5: "Excellent - Wonderful! Thanks for the perfect rating!"
+            };
+            
+            if (ratingText) {
+                ratingText.textContent = ratingMessages[rating] || `Rated ${rating} stars`;
+                ratingText.className = 'rating-text small ' + 
+                    (rating <= 2 ? 'text-danger' : 
+                     rating <= 3 ? 'text-warning' : 'text-success');
+            }
+        });
+    });
+
+    // Character count for comments
+    const textarea = document.querySelector('textarea[name="comment"]');
+    const charCount = document.querySelector('.char-count');
+    
+    if (textarea && charCount) {
+        textarea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = length;
+            
+            if (length > 400) {
+                charCount.className = 'char-count text-danger';
+            } else if (length > 300) {
+                charCount.className = 'char-count text-warning';
+            } else {
+                charCount.className = 'char-count text-muted';
+            }
+        });
+    }
+
+    // Calculate total amount when travelers count changes
+    const travelersSelect = document.querySelector('select[name="travelers_count"]');
+    const totalAmount = document.getElementById('totalAmount');
+    const packagePrice = {{ package.price }};
+    
+    if (travelersSelect && totalAmount) {
+        travelersSelect.addEventListener('change', function() {
+            const travelers = parseInt(this.value);
+            const total = packagePrice * travelers;
+            totalAmount.textContent = `₹${total}`;
+        });
+    }
+
+    // Set minimum date for travel date to today
+    const travelDateInput = document.querySelector('input[name="travel_date"]');
+    if (travelDateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        travelDateInput.min = today;
+    }
+});
+</script>
+
+<style>
+.package-detail-image {
+    position: relative;
+}
+
+.star-label {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 5px;
+}
+
+.star-label:hover {
+    transform: scale(1.2);
+}
+
+.rating-stars {
+    display: flex;
+    gap: 2px;
+}
+
+.review-item {
+    transition: all 0.3s ease;
+}
+
+.review-item:hover {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+    margin: -10px -10px 5px -10px;
+}
+
+.booking-section {
+    border-left: 4px solid #28a745;
+}
+
+.similar-packages {
+    text-align: center;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+
+{% block title %}Personalized Recommendations - TourBook{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="welcome-banner bg-gradient-primary text-white p-4 rounded mb-4">
+            <h1><i class="fas fa-magic"></i> Personalized Recommendations</h1>
+            <p class="mb-0">AI-powered tour suggestions just for you, {{ session.full_name or session.username }}!</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Preferences Panel -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-user-cog"></i> Your Travel Profile</h5>
+            </div>
+            <div class="card-body">
+                {% if preferences %}
+                <div class="mb-3">
+                    <h6><i class="fas fa-map-marker-alt text-danger"></i> Preferred Destinations</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for destination in preferences.preferred_destinations.split(',') %}
+                        <span class="badge bg-light text-dark">{{ destination.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-wallet text-success"></i> Budget Range</h6>
+                    <span class="badge bg-{{ 'success' if preferences.budget_range == 'low' else 'warning' if preferences.budget_range == 'medium' else 'danger' }}">
+                        {{ preferences.budget_range.title() }}
+                    </span>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-hiking text-primary"></i> Travel Style</h6>
+                    <span class="badge bg-primary">{{ preferences.travel_style or 'Not specified' }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-heart text-danger"></i> Interests</h6>
+                    <p class="mb-0">{{ preferences.interests or 'No specific interests set' }}</p>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-sliders-h fa-3x mb-3"></i>
+                    <p>No preferences set yet. Update your travel profile to get better recommendations!</p>
+                </div>
+                {% endif %}
+                
+                <button class="btn btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#preferencesModal">
+                    <i class="fas fa-edit"></i> Update Preferences
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Insights Card -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-robot"></i> AI Travel Assistant</h5>
+            </div>
+            <div class="card-body">
+                <div class="ai-insight p-3 bg-light rounded mb-3">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-lightbulb text-warning me-2 mt-1"></i>
+                        <div>
+                            <strong>Smart Suggestion:</strong>
+                            <p class="mb-0 small">Based on your profile, we recommend exploring {{ packages[0].destination if packages else 'new destinations' }} for your next adventure!</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ai-tip p-3 bg-light rounded">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-tips text-success me-2 mt-1"></i>
+                        <div>
+                            <strong>Travel Tip:</strong>
+                            <p class="mb-0 small">Consider booking 2-3 months in advance for the best deals and availability.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Main Content -->
+    <div class="col-md-8">
+        <!-- AI Recommendation Engine -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> AI-Curated Packages</h5>
+                    <span class="badge bg-light text-success">{{ packages|length }} matches</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if packages %}
+                <div class="row">
+                    {% for package in packages %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card recommendation-card h-100" data-package-id="{{ package.id }}">
+                            <div class="package-image position-relative" 
+                                 style="background-image: url('{{ package.image_url or '/static/images/default.jpg' }}'); height: 200px;">
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge bg-{{ 'success' if package.price < 10000 else 'warning' if package.price < 25000 else 'danger' }}">
+                                        ₹{{ package.price }}
+                                    </span>
+                                </div>
+                                <div class="position-absolute bottom-0 start-0 w-100 p-3" 
+                                     style="background: linear-gradient(transparent, rgba(0,0,0,0.8));">
+                                    <h6 class="text-white mb-1">{{ package.name }}</h6>
+                                    <small class="text-light">
+                                        <i class="fas fa-map-marker-alt"></i> {{ package.destination }}
+                                        • {{ package.duration_days }} days
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small text-muted">{{ package.description[:120] }}...</p>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-secondary">{{ package.category }}</span>
+                                    <div class="rating">
+                                        {% set avg_rating = range(1, 6)|random %}
+                                        {% for i in range(1, 6) %}
+                                        <i class="fas fa-star{{ ' text-warning' if i <= avg_rating else ' text-muted' }}"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="ai-match-indicator">
+                                    <div class="progress mb-2" style="height: 6px;">
+                                        <div class="progress-bar bg-success" 
+                                             style="width: {{ range(75, 96)|random }}%"
+                                             data-bs-toggle="tooltip" 
+                                             title="AI Match Score: {{ range(75, 96)|random }}%">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">AI Match: {{ range(75, 96)|random }}%</small>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('package_detail', package_id=package.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-info-circle"></i> View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5>No Recommendations Yet</h5>
+                    <p class="text-muted">Update your travel preferences to get personalized recommendations!</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#preferencesModal">
+                        <i class="fas fa-sliders-h"></i> Set Preferences
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Why These Recommendations -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-brain"></i> How We Choose Your Recommendations</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="feature-icon bg-primary text-white rounded-circle mx-auto mb-2" 
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user-friends"></i>
+                        </div>
+                        <h6>Your Preferences</h6>
+                        <small class="text-muted">Based on your travel style and interests</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="feature-icon bg-success text-white rounded-circle mx-auto mb-2" 
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h6>Popularity</h6>
+                        <small class="text-muted">Highly rated by travelers like you</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="feature-icon bg-warning text-white rounded-circle mx-auto mb-2" 
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h6>Seasonal Trends</h6>
+                        <small class="text-muted">Perfect for current weather and events</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="feature-icon bg-info text-white rounded-circle mx-auto mb-2" 
+                             style="width: 60px; height: 60px; display; flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-gem"></i>
+                        </div>
+                        <h6>Hidden Gems</h6>
+                        <small class="text-muted">Unique experiences you'll love</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preferences Modal -->
+<div class="modal fade" id="preferencesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-sliders-h"></i> Update Travel Preferences</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('update_preferences') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Preferred Destinations</label>
+                                <input type="text" class="form-control" name="preferred_destinations" 
+                                       value="{{ preferences.preferred_destinations if preferences }}" 
+                                       placeholder="e.g., Goa, Manali, Kerala">
+                                <div class="form-text">Separate multiple destinations with commas</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Budget Range</label>
+                                <select class="form-select" name="budget_range">
+                                    <option value="">Select budget range</option>
+                                    <option value="low" {{ 'selected' if preferences and preferences.budget_range == 'low' }}>
+                                        Low (Under ₹10,000)
+                                    </option>
+                                    <option value="medium" {{ 'selected' if preferences and preferences.budget_range == 'medium' }}>
+                                        Medium (₹10,000 - ₹25,000)
+                                    </option>
+                                    <option value="high" {{ 'selected' if preferences and preferences.budget_range == 'high' }}>
+                                        High (Above ₹25,000)
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Travel Style</label>
+                                <select class="form-select" name="travel_style">
+                                    <option value="">Select travel style</option>
+                                    <option value="Adventure" {{ 'selected' if preferences and preferences.travel_style == 'Adventure' }}>Adventure</option>
+                                    <option value="Relaxation" {{ 'selected' if preferences and preferences.travel_style == 'Relaxation' }}>Relaxation</option>
+                                    <option value="Cultural" {{ 'selected' if preferences and preferences.travel_style == 'Cultural' }}>Cultural</option>
+                                    <option value="Luxury" {{ 'selected' if preferences and preferences.travel_style == 'Luxury' }}>Luxury</option>
+                                    <option value="Family" {{ 'selected' if preferences and preferences.travel_style == 'Family' }}>Family</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Interests</label>
+                                <textarea class="form-control" name="interests" rows="3" 
+                                          placeholder="e.g., Beach activities, Historical sites, Wildlife photography">{{ preferences.interests if preferences }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Pro Tip:</strong> The more details you provide, the better our AI can recommend perfect tours for you!
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Save Preferences
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // AI recommendation animations
+    const recommendationCards = document.querySelectorAll('.recommendation-card');
+    recommendationCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in');
+    });
+
+    // Real-time preference updates
+    const preferenceForm = document.querySelector('form[action="{{ url_for("update_preferences") }}"]');
+    if (preferenceForm) {
+        preferenceForm.addEventListener('submit', function(e) {
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            submitBtn.disabled = true;
+            
+            // Simulate AI processing
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 2000);
+        });
+    }
+
+    // AI match score hover effects
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        bar.addEventListener('mouseenter', function() {
+            this.style.transform = 'scaleY(1.5)';
+        });
+        
+        bar.addEventListener('mouseleave', function() {
+            this.style.transform = 'scaleY(1)';
+        });
+    });
+
+    // Dynamic AI insights
+    function updateAIInsights() {
+        const insights = [
+            "Based on your love for adventure, we've included exciting trekking packages!",
+            "Considering your budget preference, these packages offer great value for money.",
+            "Perfect timing! These destinations have ideal weather conditions this season.",
+            "We noticed you enjoy cultural experiences - these tours include local heritage sites.",
+            "These recommendations combine your preferred destinations with unique local experiences."
+        ];
+        
+        const randomInsight = insights[Math.floor(Math.random() * insights.length)];
+        document.querySelector('.ai-insight p').textContent = randomInsight;
+    }
+
+    // Update insights every 30 seconds
+    setInterval(updateAIInsights, 30000);
+
+    // Package interaction tracking for better recommendations
+    recommendationCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const packageId = this.getAttribute('data-package-id');
+            // In a real app, send this to your analytics/ML system
+            console.log(`User interacted with package ${packageId}`);
+        });
+    });
+
+    // Smart search within recommendations
+    function filterRecommendations(searchTerm) {
+        const cards = document.querySelectorAll('.recommendation-card');
+        let visibleCount = 0;
+        
+        cards.forEach(card => {
+            const packageName = card.querySelector('h6').textContent.toLowerCase();
+            const destination = card.querySelector('small').textContent.toLowerCase();
+            const description = card.querySelector('.card-text').textContent.toLowerCase();
+            
+            const shouldShow = packageName.includes(searchTerm.toLowerCase()) ||
+                             destination.includes(searchTerm.toLowerCase()) ||
+                             description.includes(searchTerm.toLowerCase());
+            
+            card.style.display = shouldShow ? '' : 'none';
+            card.parentElement.style.display = shouldShow ? '' : 'none';
+            if (shouldShow) visibleCount++;
+        });
+        
+        // Update match count
+        const matchBadge = document.querySelector('.card-header .badge');
+        if (matchBadge) {
+            matchBadge.textContent = `${visibleCount} matches`;
+        }
+    }
+
+    // Add search functionality
+    const searchHtml = `
+        <div class="input-group mb-3">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="recommendationSearch" 
+                   placeholder="Search within recommendations...">
+        </div>
+    `;
+    
+    const cardHeader = document.querySelector('.card-header.bg-success');
+    if (cardHeader) {
+        cardHeader.insertAdjacentHTML('afterend', searchHtml);
+        
+        const searchInput = document.getElementById('recommendationSearch');
+        searchInput.addEventListener('input', function(e) {
+            filterRecommendations(e.target.value);
+        });
+    }
+});
+
+// AI-powered package comparison
+function comparePackages(packageIds) {
+    // This would open a comparison modal in a real application
+    alert('AI Comparison Feature: This would show a detailed comparison of selected packages with smart recommendations.');
+}
+
+// Export for potential module use
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { filterRecommendations, comparePackages };
+}
+</script>
+
+<style>
+.recommendation-card {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.recommendation-card.fade-in {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.package-image {
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.3s ease;
+}
+
+.recommendation-card:hover .package-image {
+    transform: scale(1.05);
+}
+
+.ai-match-indicator {
+    background: rgba(40, 167, 69, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 3px solid #28a745;
+}
+
+.ai-insight, .ai-tip {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.ai-insight {
+    border-left-color: #ffc107;
+}
+
+.ai-tip {
+    border-left-color: #28a745;
+}
+
+.feature-icon {
+    transition: all 0.3s ease;
+}
+
+.feature-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.progress-bar {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* Gradient backgrounds */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .recommendation-card {
+        margin-bottom: 1rem;
+    }
+    
+    .feature-icon {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    .ai-insight, .ai-tip {
+        font-size: 0.9rem;
+    }
+}
+
+/* Loading animation for AI processing */
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Custom scrollbar for modal */
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #3498db;
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #2980b9;
+}
+</style>
+{% endblock %}

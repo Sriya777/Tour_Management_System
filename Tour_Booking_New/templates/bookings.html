@@ -1,0 +1,624 @@
+{% extends "base.html" %}
+
+{% block title %}My Bookings - TourBook{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-suitcase"></i> My Bookings</h2>
+            <a href="{{ url_for('packages') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Booking
+            </a>
+        </div>
+
+        <!-- Booking Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <div class="stat-icon bg-primary text-white rounded-circle me-3">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div>
+                                <h3 class="mb-0">{{ bookings|selectattr('status', 'equalto', 'confirmed')|list|length }}</h3>
+                                <p class="text-muted mb-0">Confirmed</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <div class="stat-icon bg-warning text-white rounded-circle me-3">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <h3 class="mb-0">{{ bookings|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+                                <p class="text-muted mb-0">Pending</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <div class="stat-icon bg-danger text-white rounded-circle me-3">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div>
+                                <h3 class="mb-0">{{ bookings|selectattr('status', 'equalto', 'cancelled')|list|length }}</h3>
+                                <p class="text-muted mb-0">Cancelled</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <div class="stat-icon bg-info text-white rounded-circle me-3">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <div>
+                                <h3 class="mb-0">₹{{ bookings|selectattr('status', 'equalto', 'confirmed')|map(attribute='total_amount')|sum }}</h3>
+                                <p class="text-muted mb-0">Total Spent</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookings List -->
+        {% if bookings %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">All Bookings ({{ bookings|length }})</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Package</th>
+                                <th>Destination</th>
+                                <th>Booking Date</th>
+                                <th>Travelers</th>
+                                <th>Duration</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in bookings %}
+                            <tr class="booking-row" data-booking-id="{{ booking.id }}">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if booking.image_url %}
+                                        <img src="{{ booking.image_url }}" alt="{{ booking.package_name }}" 
+                                             class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                        {% else %}
+                                        <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                             style="width: 50px; height: 50px;">
+                                            <i class="fas fa-map-marked-alt text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ booking.package_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ booking.booking_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                        {{ booking.destination }}
+                                    </span>
+                                </td>
+                                <td>{{ booking.booking_date.strftime('%d %b %Y') }}</td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-users me-1"></i>
+                                        {{ booking.travelers_count }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-calendar-day me-1"></i>
+                                        {{ booking.duration_days }} days
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong class="text-success">₹{{ booking.total_amount }}</strong>
+                                </td>
+                                <td>
+                                    {% if booking.status == 'confirmed' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Confirmed
+                                    </span>
+                                    {% elif booking.status == 'pending' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Pending
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times-circle me-1"></i>
+                                        Cancelled
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#bookingModal{{ booking.id }}">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        
+                                        {% if booking.status == 'confirmed' or booking.status == 'pending' %}
+                                        <a href="{{ url_for('cancel_booking', booking_id=booking.id) }}" 
+                                           class="btn btn-outline-danger cancel-booking"
+                                           data-booking-id="{{ booking.id }}"
+                                           data-booking-name="{{ booking.package_name }}">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        {% if booking.status == 'confirmed' %}
+                                        <button type="button" class="btn btn-outline-success"
+                                                onclick="downloadInvoice({{ booking.id }})">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Booking Detail Modal -->
+                            <div class="modal fade" id="bookingModal{{ booking.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Booking Details</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6>Package Information</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <td><strong>Package:</strong></td>
+                                                            <td>{{ booking.package_name }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Destination:</strong></td>
+                                                            <td>{{ booking.destination }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Duration:</strong></td>
+                                                            <td>{{ booking.duration_days }} days</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Base Price:</strong></td>
+                                                            <td>₹{{ booking.price }} per person</td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Booking Information</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <td><strong>Booking ID:</strong></td>
+                                                            <td>TB{{ "%04d" % booking.id }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Booking Date:</strong></td>
+                                                            <td>{{ booking.booking_date.strftime('%d %b %Y, %H:%M') }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Travelers:</strong></td>
+                                                            <td>{{ booking.travelers_count }} person(s)</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Total Amount:</strong></td>
+                                                            <td class="text-success"><strong>₹{{ booking.total_amount }}</strong></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Status:</strong></td>
+                                                            <td>
+                                                                {% if booking.status == 'confirmed' %}
+                                                                <span class="badge bg-success">Confirmed</span>
+                                                                {% elif booking.status == 'pending' %}
+                                                                <span class="badge bg-warning">Pending</span>
+                                                                {% else %}
+                                                                <span class="badge bg-danger">Cancelled</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if booking.status == 'confirmed' %}
+                                            <div class="alert alert-success mt-3">
+                                                <i class="fas fa-check-circle me-2"></i>
+                                                Your booking is confirmed! You will receive a confirmation email shortly.
+                                            </div>
+                                            {% elif booking.status == 'pending' %}
+                                            <div class="alert alert-warning mt-3">
+                                                <i class="fas fa-clock me-2"></i>
+                                                Your booking is pending confirmation. We'll update you soon.
+                                            </div>
+                                            {% else %}
+                                            <div class="alert alert-danger mt-3">
+                                                <i class="fas fa-times-circle me-2"></i>
+                                                This booking has been cancelled.
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            {% if booking.status == 'confirmed' %}
+                                            <button type="button" class="btn btn-primary" onclick="downloadInvoice({{ booking.id }})">
+                                                <i class="fas fa-download me-1"></i> Download Invoice
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Status Summary -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h4>Confirmed Bookings</h4>
+                                <p class="mb-0">Ready for your adventure!</p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h4>Pending Bookings</h4>
+                                <p class="mb-0">Awaiting confirmation</p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h4>Cancelled Bookings</h4>
+                                <p class="mb-0">Previous bookings</p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-times-circle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-suitcase fa-4x text-muted mb-3"></i>
+                    <h3>No Bookings Yet</h3>
+                    <p class="text-muted mb-4">You haven't made any bookings yet. Start exploring our amazing tour packages!</p>
+                    <a href="{{ url_for('packages') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-map-marked-alt me-2"></i> Browse Packages
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel booking for <strong id="cancelPackageName"></strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone. Any paid amount will be refunded as per our cancellation policy.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Booking</button>
+                <a href="#" id="confirmCancel" class="btn btn-danger">Yes, Cancel Booking</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Cancel booking confirmation
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelButtons = document.querySelectorAll('.cancel-booking');
+    const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
+    const cancelPackageName = document.getElementById('cancelPackageName');
+    const confirmCancel = document.getElementById('confirmCancel');
+    
+    cancelButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const bookingId = this.getAttribute('data-booking-id');
+            const packageName = this.getAttribute('data-booking-name');
+            
+            cancelPackageName.textContent = packageName;
+            confirmCancel.href = this.href;
+            
+            cancelModal.show();
+        });
+    });
+    
+    // Real-time status updates
+    function updateBookingStatus(bookingId, status) {
+        const statusBadge = document.querySelector(`tr[data-booking-id="${bookingId}"] .badge`);
+        const row = document.querySelector(`tr[data-booking-id="${bookingId}"]`);
+        
+        if (statusBadge && row) {
+            statusBadge.className = 'badge ' + (status === 'confirmed' ? 'bg-success' : 
+                                              status === 'pending' ? 'bg-warning' : 'bg-danger');
+            statusBadge.innerHTML = (status === 'confirmed' ? '<i class="fas fa-check-circle me-1"></i>Confirmed' :
+                                   status === 'pending' ? '<i class="fas fa-clock me-1"></i>Pending' :
+                                   '<i class="fas fa-times-circle me-1"></i>Cancelled');
+            
+            // Add animation
+            row.style.animation = 'fadeIn 0.5s ease-in';
+        }
+    }
+    
+    // Simulate real-time updates (in real app, this would come from WebSocket)
+    setInterval(() => {
+        // This is a simulation - in production, you'd get updates from server
+        console.log('Checking for booking updates...');
+    }, 30000);
+});
+
+// Download invoice function
+function downloadInvoice(bookingId) {
+    // Show loading state
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
+    button.disabled = true;
+    
+    // Simulate invoice generation
+    setTimeout(() => {
+        // In a real application, this would make an API call to generate PDF
+        const invoiceContent = `
+            TourBook Invoice
+            ================
+            Booking ID: TB${String(bookingId).padStart(4, '0')}
+            Date: ${new Date().toLocaleDateString()}
+            
+            Thank you for your booking!
+            This is a demo invoice.
+        `;
+        
+        // Create and download text file (in real app, this would be PDF)
+        const blob = new Blob([invoiceContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `TourBook_Invoice_TB${String(bookingId).padStart(4, '0')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        // Restore button
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+        
+        // Show success message
+        showAlert('Invoice downloaded successfully!', 'success');
+    }, 1500);
+}
+
+// Show alert function
+function showAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Filter bookings by status
+function filterBookings(status) {
+    const rows = document.querySelectorAll('.booking-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const statusBadge = row.querySelector('.badge');
+        const shouldShow = status === 'all' || 
+                          (status === 'confirmed' && statusBadge.classList.contains('bg-success')) ||
+                          (status === 'pending' && statusBadge.classList.contains('bg-warning')) ||
+                          (status === 'cancelled' && statusBadge.classList.contains('bg-danger'));
+        
+        row.style.display = shouldShow ? '' : 'none';
+        if (shouldShow) visibleCount++;
+    });
+    
+    // Update count display
+    const countElement = document.querySelector('.card-header h5');
+    if (countElement) {
+        countElement.textContent = `All Bookings (${visibleCount})`;
+    }
+}
+
+// Search functionality
+function searchBookings(query) {
+    const rows = document.querySelectorAll('.booking-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const packageName = row.querySelector('strong').textContent.toLowerCase();
+        const destination = row.querySelector('.badge.bg-light').textContent.toLowerCase();
+        const shouldShow = packageName.includes(query.toLowerCase()) || 
+                          destination.includes(query.toLowerCase());
+        
+        row.style.display = shouldShow ? '' : 'none';
+        if (shouldShow) visibleCount++;
+    });
+    
+    // Update count display
+    const countElement = document.querySelector('.card-header h5');
+    if (countElement) {
+        countElement.textContent = `All Bookings (${visibleCount})`;
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Bookings page loaded successfully');
+    
+    // Add search functionality if needed
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Search bookings...';
+    searchInput.className = 'form-control mb-3';
+    searchInput.addEventListener('input', (e) => {
+        searchBookings(e.target.value);
+    });
+    
+    const cardHeader = document.querySelector('.card-header');
+    if (cardHeader) {
+        cardHeader.appendChild(searchInput);
+    }
+});
+</script>
+
+<style>
+.booking-row:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+    transition: all 0.3s ease;
+}
+
+.empty-state {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.stat-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.5em 0.75em;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.booking-row {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.25rem;
+        border-radius: 0.375rem !important;
+    }
+    
+    .stat-card .d-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        margin: 0 auto 0.5rem auto !important;
+    }
+}
+</style>
+{% endblock %}

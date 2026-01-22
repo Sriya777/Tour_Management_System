@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Package - Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_packages') }}">Packages</a></li>
+                <li class="breadcrumb-item active">Add Package</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Tour Package</h4>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" enctype="multipart/form-data" id="packageForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Package Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required 
+                                       placeholder="e.g., Beach Paradise Goa">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="destination" class="form-label">Destination *</label>
+                                <input type="text" class="form-control" id="destination" name="destination" required
+                                       placeholder="e.g., Goa, India">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Category *</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Beach">Beach</option>
+                                    <option value="Adventure">Adventure</option>
+                                    <option value="Cultural">Cultural</option>
+                                    <option value="Wildlife">Wildlife</option>
+                                    <option value="Relaxation">Relaxation</option>
+                                    <option value="Nature">Nature</option>
+                                    <option value="Luxury">Luxury</option>
+                                    <option value="Spiritual">Spiritual</option>
+                                    <option value="Family">Family</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="duration_days" class="form-label">Duration (Days) *</label>
+                                <input type="number" class="form-control" id="duration_days" name="duration_days" 
+                                       min="1" max="30" required placeholder="e.g., 5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price (₹) *</label>
+                                <input type="number" class="form-control" id="price" name="price" 
+                                       min="0" step="0.01" required placeholder="e.g., 15000.00">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="available_slots" class="form-label">Available Slots *</label>
+                                <input type="number" class="form-control" id="available_slots" name="available_slots" 
+                                       min="1" max="100" required placeholder="e.g., 20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Package Description *</label>
+                        <textarea class="form-control" id="description" name="description" rows="5" required
+                                  placeholder="Describe the package in detail... Include highlights, activities, accommodations, etc."></textarea>
+                        <div class="form-text">
+                            <span id="charCount">0</span>/1000 characters
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="image_url" class="form-label">Image URL *</label>
+                                <input type="url" class="form-control" id="image_url" name="image_url" 
+                                       placeholder="https://images.unsplash.com/photo-..."
+                                       required>
+                                <div class="form-text">
+                                    Use high-quality images from Unsplash or similar sources
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Image Preview</label>
+                                <div id="imagePreview" class="image-preview border rounded p-2 text-center" 
+                                     style="height: 150px; background: #f8f9fa;">
+                                    <div class="h-100 d-flex align-items-center justify-content-center">
+                                        <div class="text-muted">
+                                            <i class="fas fa-image fa-2x mb-2"></i>
+                                            <p class="mb-0">Image preview will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Package Inclusions -->
+                    <div class="mb-4">
+                        <label class="form-label">Package Inclusions</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="inclusions" value="accommodation" id="accommodation" checked>
+                                    <label class="form-check-label" for="accommodation">
+                                        <i class="fas fa-hotel text-primary"></i> Accommodation
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="inclusions" value="meals" id="meals" checked>
+                                    <label class="form-check-label" for="meals">
+                                        <i class="fas fa-utensils text-success"></i> Meals
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="inclusions" value="transport" id="transport" checked>
+                                    <label class="form-check-label" for="transport">
+                                        <i class="fas fa-bus text-warning"></i> Transportation
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="inclusions" value="guide" id="guide" checked>
+                                    <label class="form-check-label" for="guide">
+                                        <i class="fas fa-user text-info"></i> Tour Guide
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="inclusions" value="activities" id="activities" checked>
+                                    <label class="form-check-label" for="activities">
+                                        <i class="fas fa-hiking text-danger"></i> Activities
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="inclusions" value="insurance" id="insurance">
+                                    <label class="form-check-label" for="insurance">
+                                        <i class="fas fa-shield-alt text-purple"></i> Travel Insurance
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Pro Tip:</strong> Use descriptive images and detailed descriptions to attract more bookings!
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin_packages') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Packages
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Create Package
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sample Image URLs -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-images"></i> Sample Image URLs</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <small class="text-muted">Beach:</small><br>
+                        <code class="small">https://images.unsplash.com/photo-1512343879784-a960bf40e7f2</code>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <small class="text-muted">Mountains:</small><br>
+                        <code class="small">https://images.unsplash.com/photo-1464822759844-d2d1363b4cb2</code>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <small class="text-muted">Cultural:</small><br>
+                        <code class="small">https://images.unsplash.com/photo-1532386233008-7c4dff8a9c82</code>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- In the image_url field, set a default value -->
+<input type="text" class="form-control" id="image_url" name="image_url" 
+       value="{{ package.image_url if package else 'https://via.placeholder.com/400x300/007bff/ffffff?text=Tour+Package' }}"
+       placeholder="Enter image URL or use default">
+<small class="form-text text-muted">
+    Leave empty to use default image, or enter a valid image URL
+</small>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('packageForm');
+    const description = document.getElementById('description');
+    const charCount = document.getElementById('charCount');
+    const imageUrl = document.getElementById('image_url');
+    const imagePreview = document.getElementById('imagePreview');
+
+    // Character count for description
+    description.addEventListener('input', function() {
+        const length = this.value.length;
+        charCount.textContent = length;
+        
+        if (length > 900) {
+            charCount.className = 'text-danger';
+        } else if (length > 700) {
+            charCount.className = 'text-warning';
+        } else {
+            charCount.className = 'text-muted';
+        }
+    });
+
+    // Image preview
+    imageUrl.addEventListener('input', function() {
+        const url = this.value.trim();
+        if (url) {
+            imagePreview.innerHTML = `
+                <img src="${url}" alt="Preview" 
+                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 5px;"
+                     onerror="this.style.display='none'; imagePreview.innerHTML='<div class=\\'h-100 d-flex align-items-center justify-content-center\\'><div class=\\'text-danger\\'><i class=\\'fas fa-exclamation-triangle fa-2x mb-2\\'></i><p class=\\'mb-0\\'>Invalid image URL</p></div></div>'">
+            `;
+        } else {
+            imagePreview.innerHTML = `
+                <div class="h-100 d-flex align-items-center justify-content-center">
+                    <div class="text-muted">
+                        <i class="fas fa-image fa-2x mb-2"></i>
+                        <p class="mb-0">Image preview will appear here</p>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        let valid = true;
+        const requiredFields = form.querySelectorAll('[required]');
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                valid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+
+        // Validate image URL
+        if (imageUrl.value && !isValidUrl(imageUrl.value)) {
+            valid = false;
+            imageUrl.classList.add('is-invalid');
+            showAlert('Please enter a valid image URL.', 'warning');
+        }
+
+        if (!valid) {
+            e.preventDefault();
+            showAlert('Please fill in all required fields correctly.', 'danger');
+        } else {
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            submitBtn.disabled = true;
+        }
+    });
+
+    function isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function showAlert(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const cardBody = document.querySelector('.card-body');
+        cardBody.insertBefore(alertDiv, cardBody.firstChild);
+    }
+
+    // Auto-fill sample data for testing
+    const sampleData = {
+        name: "Beach Paradise Goa",
+        destination: "Goa, India", 
+        category: "Beach",
+        duration_days: "5",
+        price: "15000",
+        available_slots: "20",
+        description: "Experience the ultimate beach vacation in Goa with pristine beaches, water sports, and vibrant nightlife. Includes luxury accommodation, daily breakfast, and guided tours.",
+        image_url: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2"
+    };
+
+    // Uncomment below line to auto-fill form for testing
+    // autoFillForm(sampleData);
+});
+
+function autoFillForm(data) {
+    Object.keys(data).forEach(key => {
+        const element = document.getElementById(key);
+        if (element) {
+            element.value = data[key];
+            // Trigger input events for previews
+            if (element.type === 'url') {
+                element.dispatchEvent(new Event('input'));
+            }
+        }
+    });
+}
+</script>
+
+<style>
+.image-preview {
+    transition: all 0.3s ease;
+}
+
+.form-check-label {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.form-check-label:hover {
+    transform: translateX(5px);
+}
+
+.code {
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.875em;
+}
+</style>
+{% endblock %}

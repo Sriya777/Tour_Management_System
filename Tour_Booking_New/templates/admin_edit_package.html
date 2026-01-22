@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Package - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .form-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+            font-weight: 600;
+        }
+        
+        .package-preview {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 3px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .package-preview:hover {
+            border-color: #007bff;
+            transform: scale(1.02);
+        }
+        
+        .section-title {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            border: none;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            border: none;
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            border: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #545b62);
+            border: none;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .required::after {
+            content: " *";
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .info-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-left: 4px solid #007bff;
+        }
+        
+        .status-badge {
+            font-size: 0.8em;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        
+        .form-check-input:checked {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        
+        .input-group-text {
+            background-color: #e9ecef;
+            border: 2px solid #e9ecef;
+            border-radius: 8px 0 0 8px;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-radius: 8px;
+            border: none;
+        }
+        
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+        
+        .preview-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 form-container">
+                <!-- Header Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="feature-icon">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div>
+                                <h4 class="mb-0">Edit Package</h4>
+                                <small class="opacity-75">Update package details and settings</small>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('admin_packages') }}" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Packages
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Main Form -->
+                <div class="card">
+                    <div class="card-body p-4">
+                        <form method="POST" action="{{ url_for('edit_package', package_id=package.id) }}" class="needs-validation" novalidate id="packageForm">
+                            <!-- Navigation Tabs -->
+                            <ul class="nav nav-tabs mb-4" id="packageTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button" role="tab">
+                                        <i class="fas fa-info-circle me-2"></i>Basic Info
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing" type="button" role="tab">
+                                        <i class="fas fa-tag me-2"></i>Pricing & Status
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab">
+                                        <i class="fas fa-image me-2"></i>Media
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="packageTabsContent">
+                                <!-- Basic Information Tab -->
+                                <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="name" class="form-label required">Package Name</label>
+                                                <input type="text" class="form-control" id="name" name="name" 
+                                                       value="{{ package.name }}" required placeholder="Enter package name">
+                                                <div class="invalid-feedback">Please provide a package name.</div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="destination" class="form-label required">Destination</label>
+                                                <input type="text" class="form-control" id="destination" name="destination" 
+                                                       value="{{ package.destination }}" required placeholder="Enter destination">
+                                                <div class="invalid-feedback">Please provide a destination.</div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="category" class="form-label required">Category</label>
+                                                <select class="form-select" id="category" name="category" required>
+                                                    <option value="">Select Category</option>
+                                                    <option value="Beach" {% if package.category == 'Beach' %}selected{% endif %}>Beach Vacation</option>
+                                                    <option value="Mountain" {% if package.category == 'Mountain' %}selected{% endif %}>Mountain Trek</option>
+                                                    <option value="Cultural" {% if package.category == 'Cultural' %}selected{% endif %}>Cultural Tour</option>
+                                                    <option value="Adventure" {% if package.category == 'Adventure' %}selected{% endif %}>Adventure Sports</option>
+                                                    <option value="Wildlife" {% if package.category == 'Wildlife' %}selected{% endif %}>Wildlife Safari</option>
+                                                    <option value="Pilgrimage" {% if package.category == 'Pilgrimage' %}selected{% endif %}>Pilgrimage</option>
+                                                    <option value="Luxury" {% if package.category == 'Luxury' %}selected{% endif %}>Luxury Getaway</option>
+                                                    <option value="Budget" {% if package.category == 'Budget' %}selected{% endif %}>Budget Travel</option>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a category.</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="duration_days" class="form-label required">Duration (Days)</label>
+                                                <input type="number" class="form-control" id="duration_days" name="duration_days" 
+                                                       value="{{ package.duration_days }}" min="1" max="30" required>
+                                                <div class="invalid-feedback">Please provide a valid duration.</div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="description" class="form-label required">Description</label>
+                                                <textarea class="form-control" id="description" name="description" 
+                                                          rows="4" required placeholder="Describe the package highlights and features">{{ package.description }}</textarea>
+                                                <div class="invalid-feedback">Please provide a package description.</div>
+                                                <small class="form-text text-muted">
+                                                    <span id="charCount">0</span>/500 characters
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Pricing & Status Tab -->
+                                <div class="tab-pane fade" id="pricing" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="price" class="form-label required">Price (₹)</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">₹</span>
+                                                    <input type="number" class="form-control" id="price" name="price" 
+                                                           value="{{ package.price }}" min="0" step="0.01" required>
+                                                </div>
+                                                <div class="invalid-feedback">Please provide a valid price.</div>
+                                                <small class="form-text text-muted" id="priceDisplay">
+                                                    Display: ₹<span id="formattedPrice">0</span>
+                                                </small>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="available_slots" class="form-label required">Available Slots</label>
+                                                <input type="number" class="form-control" id="available_slots" name="available_slots" 
+                                                       value="{{ package.available_slots }}" min="0" max="100" required>
+                                                <div class="invalid-feedback">Please provide available slots.</div>
+                                                <div class="mt-2">
+                                                    <div class="progress" style="height: 8px;">
+                                                        <div id="slotsProgress" class="progress-bar" role="progressbar" 
+                                                             style="width: {{ (package.available_slots / 100) * 100 }}%"></div>
+                                                    </div>
+                                                    <small class="form-text text-muted" id="slotsText">
+                                                        {{ package.available_slots }}% of maximum capacity
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="mb-4">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                                           {% if package.is_active %}checked{% endif %}>
+                                                    <label class="form-check-label fw-bold" for="is_active">
+                                                        Package Active
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    When active, this package will be visible to users for booking.
+                                                </small>
+                                            </div>
+
+                                            <!-- Quick Stats -->
+                                            <div class="info-card p-3 rounded">
+                                                <h6 class="mb-3"><i class="fas fa-chart-bar me-2"></i>Quick Stats</h6>
+                                                <div class="row text-center">
+                                                    <div class="col-6">
+                                                        <div class="stat-number">{{ package.duration_days }}</div>
+                                                        <small>Days</small>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="stat-number">{{ package.available_slots }}</div>
+                                                        <small>Slots Left</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Media Tab -->
+                                <div class="tab-pane fade" id="media" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="image_url" class="form-label">Image URL</label>
+                                                <input type="url" class="form-control" id="image_url" name="image_url" 
+                                                       value="{{ package.image_url or 'https://via.placeholder.com/600x400/007bff/ffffff?text=Tour+Package' }}"
+                                                       placeholder="Enter image URL">
+                                                <small class="form-text text-muted">
+                                                    Enter a valid image URL or leave empty for default image
+                                                </small>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadSampleImages()">
+                                                    <i class="fas fa-images me-2"></i>Load Sample Images
+                                                </button>
+                                            </div>
+
+                                            <!-- Sample Images -->
+                                            <div id="sampleImages" class="row g-2" style="display: none;">
+                                                <div class="col-4">
+                                                    <img src="https://via.placeholder.com/200x150/28a745/ffffff?text=Beach" 
+                                                         class="img-fluid rounded cursor-pointer" 
+                                                         onclick="setImageUrl(this.src)"
+                                                         style="cursor: pointer;">
+                                                </div>
+                                                <div class="col-4">
+                                                    <img src="https://via.placeholder.com/200x150/dc3545/ffffff?text=Mountain" 
+                                                         class="img-fluid rounded cursor-pointer" 
+                                                         onclick="setImageUrl(this.src)"
+                                                         style="cursor: pointer;">
+                                                </div>
+                                                <div class="col-4">
+                                                    <img src="https://via.placeholder.com/200x150/6f42c1/ffffff?text=Cultural" 
+                                                         class="img-fluid rounded cursor-pointer" 
+                                                         onclick="setImageUrl(this.src)"
+                                                         style="cursor: pointer;">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">Image Preview</label>
+                                            <div class="text-center">
+                                                <img id="image_preview" 
+                                                     src="{{ package.image_url or 'https://via.placeholder.com/600x400/007bff/ffffff?text=Tour+Package' }}" 
+                                                     alt="Package preview" 
+                                                     class="package-preview"
+                                                     onerror="this.src='https://via.placeholder.com/600x400/007bff/ffffff?text=Tour+Package'">
+                                                <div class="mt-2">
+                                                    <small class="text-muted" id="imageStatus">Image loaded successfully</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="{{ url_for('admin_packages') }}" class="btn btn-secondary">
+                                            <i class="fas fa-times me-2"></i>Cancel
+                                        </a>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ url_for('package_detail', package_id=package.id) }}" 
+                                               target="_blank" class="btn btn-info">
+                                                <i class="fas fa-eye me-2"></i>Preview
+                                            </a>
+                                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                                <i class="fas fa-save me-2"></i>Update Package
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Updating package...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form validation
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        } else {
+                            // Show loading spinner
+                            document.getElementById('loadingSpinner').style.display = 'block';
+                            document.getElementById('submitBtn').disabled = true;
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+
+        // Image preview and URL handling
+        const imageUrlInput = document.getElementById('image_url');
+        const imagePreview = document.getElementById('image_preview');
+        const imageStatus = document.getElementById('imageStatus');
+
+        imageUrlInput.addEventListener('input', function() {
+            const url = this.value.trim();
+            updateImagePreview(url);
+        });
+
+        function updateImagePreview(url) {
+            if (url) {
+                imagePreview.src = url;
+                imageStatus.textContent = 'Loading image...';
+                imageStatus.className = 'text-warning';
+                
+                // Check if image loads successfully
+                imagePreview.onload = function() {
+                    imageStatus.textContent = 'Image loaded successfully';
+                    imageStatus.className = 'text-success';
+                };
+                
+                imagePreview.onerror = function() {
+                    imageStatus.textContent = 'Failed to load image. Using default.';
+                    imageStatus.className = 'text-danger';
+                    imagePreview.src = 'https://via.placeholder.com/600x400/007bff/ffffff?text=Tour+Package';
+                };
+            } else {
+                imagePreview.src = 'https://via.placeholder.com/600x400/007bff/ffffff?text=Tour+Package';
+                imageStatus.textContent = 'Using default image';
+                imageStatus.className = 'text-muted';
+            }
+        }
+
+        // Sample images functionality
+        function loadSampleImages() {
+            const sampleImages = document.getElementById('sampleImages');
+            sampleImages.style.display = sampleImages.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function setImageUrl(url) {
+            imageUrlInput.value = url;
+            updateImagePreview(url);
+        }
+
+        // Price formatting
+        const priceInput = document.getElementById('price');
+        const formattedPrice = document.getElementById('formattedPrice');
+
+        priceInput.addEventListener('input', function() {
+            const price = parseFloat(this.value) || 0;
+            formattedPrice.textContent = price.toLocaleString('en-IN');
+        });
+
+        // Initialize price display
+        priceInput.dispatchEvent(new Event('input'));
+
+        // Slots progress bar
+        const slotsInput = document.getElementById('available_slots');
+        const slotsProgress = document.getElementById('slotsProgress');
+        const slotsText = document.getElementById('slotsText');
+
+        slotsInput.addEventListener('input', function() {
+            const slots = parseInt(this.value) || 0;
+            const progress = (slots / 100) * 100;
+            slotsProgress.style.width = progress + '%';
+            
+            // Update progress bar color based on slots
+            if (slots < 10) {
+                slotsProgress.className = 'progress-bar bg-danger';
+            } else if (slots < 25) {
+                slotsProgress.className = 'progress-bar bg-warning';
+            } else {
+                slotsProgress.className = 'progress-bar bg-success';
+            }
+            
+            slotsText.textContent = slots + ' slots available (' + progress + '% of capacity)';
+        });
+
+        // Initialize slots display
+        slotsInput.dispatchEvent(new Event('input'));
+
+        // Character count for description
+        const descriptionInput = document.getElementById('description');
+        const charCount = document.getElementById('charCount');
+
+        descriptionInput.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = count;
+            
+            if (count > 500) {
+                charCount.className = 'text-danger';
+            } else if (count > 400) {
+                charCount.className = 'text-warning';
+            } else {
+                charCount.className = 'text-success';
+            }
+        });
+
+        // Initialize character count
+        descriptionInput.dispatchEvent(new Event('input'));
+
+        // Unsaved changes warning
+        let formChanged = false;
+        const formInputs = document.querySelectorAll('input, textarea, select');
+        
+        formInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                formChanged = true;
+            });
+        });
+
+        window.addEventListener('beforeunload', (event) => {
+            if (formChanged) {
+                event.preventDefault();
+                event.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+            }
+        });
+
+        document.getElementById('packageForm').addEventListener('submit', () => {
+            formChanged = false;
+        });
+
+        // Tab navigation with validation
+        document.querySelectorAll('.nav-link').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                const currentTab = this.getAttribute('data-bs-target');
+                if (currentTab === '#pricing') {
+                    // Validate basic info before moving to pricing
+                    const name = document.getElementById('name').value;
+                    const destination = document.getElementById('destination').value;
+                    const category = document.getElementById('category').value;
+                    
+                    if (!name || !destination || !category) {
+                        e.preventDefault();
+                        alert('Please complete all basic information fields before proceeding to pricing.');
+                        document.getElementById('basic-tab').click();
+                    }
+                }
+            });
+        });
+
+        // Auto-save draft (optional feature)
+        let autoSaveTimer;
+        function autoSaveDraft() {
+            const formData = new FormData(document.getElementById('packageForm'));
+            console.log('Auto-saving draft...', Object.fromEntries(formData));
+            // Here you could implement actual auto-save to server
+        }
+
+        document.getElementById('packageForm').addEventListener('input', function() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(autoSaveDraft, 2000);
+        });
+
+        // Initialize image preview
+        updateImagePreview(imageUrlInput.value);
+    </script>
+    {% endblock %}
+</body>
+</html>

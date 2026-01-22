@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TourBook{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="welcome-banner bg-gradient-primary text-white p-4 rounded mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold">
+                        <i class="fas fa-home"></i> Welcome, {{ full_name or username }}!
+                    </h1>
+                    <p class="lead mb-0">Ready for your next adventure? Explore personalized recommendations below.</p>
+                    {% if user_type == 'admin' %}
+                    <span class="badge bg-warning mt-2">
+                        <i class="fas fa-crown"></i> Administrator
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="quick-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-suitcase me-2"></i>
+                            <strong>{{ bookings_count }}</strong> Total Bookings
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-map-marked-alt me-2"></i>
+                            <strong>{{ destinations_visited }}</strong> Destinations
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-start border-primary border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted fw-semibold">Total Bookings</h6>
+                        <h3 class="mb-0 fw-bold text-primary">{{ bookings_count }}</h3>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-suitcase fa-2x text-primary"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('bookings') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-start border-success border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted fw-semibold">Total Spent</h6>
+                        <h3 class="mb-0 fw-bold text-success">₹{{ total_spent }}</h3>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-wallet fa-2x text-success"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">Lifetime value</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-start border-warning border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted fw-semibold">Pending Bookings</h6>
+                        <h3 class="mb-0 fw-bold text-warning">{{ pending_bookings_count }}</h3>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('bookings') }}" class="btn btn-sm btn-outline-warning">Check Status</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-start border-info border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted fw-semibold">Average Rating</h6>
+                        <h3 class="mb-0 fw-bold text-info">{{ avg_rating }}/5</h3>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-star fa-2x text-info"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="rating-stars">
+                        {% for i in range(1, 6) %}
+                        <i class="fas fa-star{{ ' text-warning' if i <= avg_rating|round else ' text-muted' }}"></i>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column -->
+    <div class="col-lg-8">
+        <!-- Recommended Packages -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-magic"></i> Recommended For You</h5>
+                <a href="{{ url_for('recommendations') }}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recommended_packages %}
+                <div class="row">
+                    {% for package in recommended_packages %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 package-card-sm">
+                            <div class="package-image-sm" 
+                                 style="background-image: url('{{ package.image_url }}');">
+                                <div class="package-overlay">
+                                    <span class="badge bg-{{ 'success' if package.available_slots > 5 else 'warning' }}">
+                                        {{ package.available_slots }} slots
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">{{ package.name }}</h6>
+                                <p class="card-text small text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt text-danger"></i> {{ package.destination }}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="h6 text-primary mb-0">₹{{ package.price }}</span>
+                                    <span class="badge bg-secondary">{{ package.duration_days }}d</span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent p-2">
+                                <a href="{{ url_for('package_detail', package_id=package.id) }}" 
+                                   class="btn btn-sm btn-outline-primary w-100">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-compass fa-3x text-muted mb-3"></i>
+                    <h5>No Recommendations Yet</h5>
+                    <p class="text-muted">Start exploring packages to get personalized recommendations!</p>
+                    <a href="{{ url_for('packages') }}" class="btn btn-primary">Explore Packages</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_activity %}
+                <div class="activity-timeline">
+                    {% for activity in recent_activity %}
+                    <div class="activity-item d-flex align-items-start mb-3">
+                        <div class="activity-icon me-3">
+                            {% if activity.type == 'booking' %}
+                            <i class="fas fa-suitcase text-primary"></i>
+                            {% else %}
+                            <i class="fas fa-star text-warning"></i>
+                            {% endif %}
+                        </div>
+                        <div class="activity-content flex-grow-1">
+                            <h6 class="mb-1">{{ activity.title }}</h6>
+                            <p class="text-muted mb-1 small">{{ activity.description }}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> 
+                                {{ activity.date.strftime('%d %b %Y, %H:%M') }}
+                            </small>
+                        </div>
+                        <div class="activity-status">
+                            {% if activity.status == 'confirmed' %}
+                            <span class="badge bg-success">Confirmed</span>
+                            {% elif activity.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Completed</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                    <h5>No Recent Activity</h5>
+                    <p class="text-muted">Your recent bookings and feedback will appear here.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('packages') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-search"></i> Browse Packages
+                    </a>
+                    <a href="{{ url_for('bookings') }}" class="btn btn-outline-success btn-lg">
+                        <i class="fas fa-suitcase"></i> My Bookings
+                    </a>
+                    <a href="{{ url_for('recommendations') }}" class="btn btn-outline-info btn-lg">
+                        <i class="fas fa-magic"></i> Get Recommendations
+                    </a>
+                    <a href="{{ url_for('feedback') }}" class="btn btn-outline-warning btn-lg">
+                        <i class="fas fa-comment"></i> Submit Feedback
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Trips -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Upcoming Trips</h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_trips %}
+                    {% for trip in upcoming_trips %}
+                    <div class="upcoming-trip mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-start">
+                            {% if trip.image_url %}
+                            <img src="{{ trip.image_url }}" alt="{{ trip.package_name }}" 
+                                 class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                 style="width: 50px; height: 50px;">
+                                <i class="fas fa-map-marked-alt text-muted"></i>
+                            </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ trip.package_name }}</h6>
+                                <p class="text-muted mb-1 small">
+                                    <i class="fas fa-map-marker-alt"></i> {{ trip.destination }}
+                                </p>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> 
+                                    {{ trip.booking_date.strftime('%d %b %Y') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-calendar-plus fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No upcoming trips</p>
+                    <a href="{{ url_for('packages') }}" class="btn btn-sm btn-outline-warning mt-2">Book Now</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Favorite Categories -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-heart"></i> Your Favorite Categories</h5>
+            </div>
+            <div class="card-body">
+                {% if favorite_categories %}
+                    {% for category in favorite_categories %}
+                    <div class="category-item mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">{{ category.category }}</span>
+                            <span class="badge bg-primary">{{ category.booking_count }} trips</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 6px;">
+                            <div class="progress-bar bg-success" 
+                                 style="width: {{ (category.booking_count / bookings_count * 100) if bookings_count > 0 else 0 }}%">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-star fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No favorite categories yet</p>
+                    <small class="text-muted">Your preferences will appear here</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Quick Stats (only for admin users) -->
+{% if user_type == 'admin' %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-crown"></i> Admin Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin_packages') }}" class="text-decoration-none">
+                            <div class="admin-stat">
+                                <i class="fas fa-box fa-2x text-primary mb-2"></i>
+                                <h4 class="text-primary">{{ packages_count }}</h4>
+                                <p class="text-muted mb-0">Total Packages</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin_users') }}" class="text-decoration-none">
+                            <div class="admin-stat">
+                                <i class="fas fa-users fa-2x text-success mb-2"></i>
+                                <h4 class="text-success">50+</h4>
+                                <p class="text-muted mb-0">Total Users</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin_bookings') }}" class="text-decoration-none">
+                            <div class="admin-stat">
+                                <i class="fas fa-receipt fa-2x text-info mb-2"></i>
+                                <h4 class="text-info">100+</h4>
+                                <p class="text-muted mb-0">Total Bookings</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin_dashboard') }}" class="text-decoration-none">
+                            <div class="admin-stat">
+                                <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                                <h4 class="text-warning">₹500K+</h4>
+                                <p class="text-muted mb-0">Total Revenue</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animations to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in-up');
+    });
+
+    // Update real-time stats
+    function updateRealTimeStats() {
+        // Simulate real-time updates
+        const stats = document.querySelectorAll('.stat-card h3');
+        stats.forEach(stat => {
+            const originalValue = parseInt(stat.textContent.replace('₹', '').replace(',', ''));
+            if (Math.random() > 0.8) {
+                const newValue = originalValue + Math.floor(Math.random() * 10);
+                stat.textContent = stat.textContent.includes('₹') ? `₹${newValue}` : newValue;
+                
+                // Add pulse effect
+                stat.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => {
+                    stat.style.animation = '';
+                }, 500);
+            }
+        });
+    }
+
+    // Update every 30 seconds
+    setInterval(updateRealTimeStats, 30000);
+
+    // Add hover effects to quick action buttons
+    const quickActions = document.querySelectorAll('.btn-outline-primary, .btn-outline-success, .btn-outline-info, .btn-outline-warning');
+    quickActions.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+
+<style>
+.welcome-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+}
+
+.stat-card {
+    transition: all 0.3s ease;
+    border-radius: 12px;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.package-card-sm {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.package-card-sm:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.package-image-sm {
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.package-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.activity-item {
+    padding: 10px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background-color: #f8f9fa;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upcoming-trip {
+    transition: all 0.3s ease;
+}
+
+.upcoming-trip:hover {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+    margin: -10px;
+}
+
+.admin-stat {
+    transition: all 0.3s ease;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.admin-stat:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.quick-stats .stat-item {
+    background: rgba(255,255,255,0.2);
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.border-start {
+    border-left-width: 4px !important;
+}
+</style>
+{% endblock %}

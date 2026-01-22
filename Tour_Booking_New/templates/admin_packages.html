@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Packages - Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-box"></i> Manage Packages</h2>
+                <p class="text-muted mb-0">Create, edit, and manage tour packages</p>
+            </div>
+            <a href="{{ url_for('add_package') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Add New Package
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Packages Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h3 class="text-primary mb-0">{{ packages|length }}</h3>
+                <p class="text-muted mb-0">Total Packages</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h3 class="text-success mb-0">{{ packages|selectattr('is_active')|list|length }}</h3>
+                <p class="text-muted mb-0">Active</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h3 class="text-warning mb-0">{{ packages|selectattr('available_slots', 'lt', 5)|list|length }}</h3>
+                <p class="text-muted mb-0">Low Stock</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h3 class="text-info mb-0">{{ packages|selectattr('available_slots', 'eq', 0)|list|length }}</h3>
+                <p class="text-muted mb-0">Sold Out</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">All Packages ({{ packages|length }})</h5>
+        <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm" id="searchPackages" placeholder="Search packages...">
+            <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if packages %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Package</th>
+                        <th>Destination</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Slots</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for package in packages %}
+                    <tr class="package-row" data-package-id="{{ package.id }}" data-status="{{ 'active' if package.is_active else 'inactive' }}">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="{{ package.image_url }}" alt="{{ package.name }}" 
+                                     class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                <div>
+                                    <strong>{{ package.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ package.duration_days }} days</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ package.destination }}</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ package.category }}</span>
+                        </td>
+                        <td>
+                            <strong class="text-success">₹{{ package.price }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if package.available_slots > 10 else 'warning' if package.available_slots > 0 else 'danger' }}">
+                                {{ package.available_slots }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if package.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ package.created_at.strftime('%d %b %Y') }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('edit_package', package_id=package.id) }}" 
+                                   class="btn btn-outline-primary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('toggle_package', package_id=package.id) }}" 
+                                   class="btn btn-{{ 'outline-warning' if package.is_active else 'outline-success' }}"
+                                   title="{{ 'Deactivate' if package.is_active else 'Activate' }}">
+                                    <i class="fas fa-{{ 'pause' if package.is_active else 'play' }}"></i>
+                                </a>
+                                <button class="btn btn-outline-danger delete-package" 
+                                        data-package-id="{{ package.id }}"
+                                        data-package-name="{{ package.name }}"
+                                        title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+            <h4>No Packages Found</h4>
+            <p class="text-muted">Get started by creating your first tour package.</p>
+            <a href="{{ url_for('add_package') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create First Package
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete package "<strong id="deletePackageName"></strong>"?</p>
+                <p class="text-danger"><small>This action cannot be undone. All associated bookings will be affected.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmDelete" class="btn btn-danger">Delete Package</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('.delete-package');
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const deletePackageName = document.getElementById('deletePackageName');
+    const confirmDelete = document.getElementById('confirmDelete');
+    
+    // Delete package confirmation
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const packageId = this.getAttribute('data-package-id');
+            const packageName = this.getAttribute('data-package-name');
+            
+            deletePackageName.textContent = packageName;
+            confirmDelete.href = `/admin/delete_package/${packageId}`;
+            
+            deleteModal.show();
+        });
+    });
+
+    // Search functionality
+    const searchInput = document.getElementById('searchPackages');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    function filterPackages() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        
+        const rows = document.querySelectorAll('.package-row');
+        rows.forEach(row => {
+            const packageName = row.querySelector('strong').textContent.toLowerCase();
+            const destination = row.cells[1].textContent.toLowerCase();
+            const category = row.cells[2].textContent.toLowerCase();
+            const status = row.getAttribute('data-status');
+            
+            const matchesSearch = packageName.includes(searchTerm) || 
+                                destination.includes(searchTerm) || 
+                                category.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+    
+    searchInput.addEventListener('input', filterPackages);
+    statusFilter.addEventListener('change', filterPackages);
+
+    // Add hover effects
+    const rows = document.querySelectorAll('.package-row');
+    rows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+});
+</script>
+
+<style>
+.package-row {
+    transition: all 0.3s ease;
+}
+
+.package-row:hover {
+    transform: translateX(5px);
+}
+
+.stat-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

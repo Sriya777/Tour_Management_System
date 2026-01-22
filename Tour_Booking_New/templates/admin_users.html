@@ -1,0 +1,792 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-users-cog"></i> Manage Users</h2>
+                <p class="text-muted mb-0">View and manage all registered users</p>
+            </div>
+            <div class="d-flex gap-2">
+                <input type="text" class="form-control" id="searchUsers" placeholder="Search users...">
+                <select class="form-select" id="roleFilter" style="width: auto;">
+                    <option value="">All Roles</option>
+                    <option value="user">Users</option>
+                    <option value="admin">Admins</option>
+                </select>
+                <button class="btn btn-success" id="exportUsersBtn">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card stat-card border-start border-primary border-4">
+            <div class="card-body text-center">
+                <h3 class="text-primary mb-0">{{ users|length }}</h3>
+                <p class="text-muted mb-0">Total Users</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card stat-card border-start border-success border-4">
+            <div class="card-body text-center">
+                <h3 class="text-success mb-0">{{ users|selectattr('user_type', 'equalto', 'user')|list|length }}</h3>
+                <p class="text-muted mb-0">Regular Users</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card stat-card border-start border-warning border-4">
+            <div class="card-body text-center">
+                <h3 class="text-warning mb-0">{{ users|selectattr('user_type', 'equalto', 'admin')|list|length }}</h3>
+                <p class="text-muted mb-0">Administrators</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card stat-card border-start border-info border-4">
+            <div class="card-body text-center">
+                <h3 class="text-info mb-0">{{ users|selectattr('phone')|list|length }}</h3>
+                <p class="text-muted mb-0">With Phone</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card stat-card border-start border-purple border-4">
+            <div class="card-body text-center">
+                <h3 class="text-purple mb-0">{{ users|selectattr('full_name')|list|length }}</h3>
+                <p class="text-muted mb-0">With Full Name</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card stat-card border-start border-danger border-4">
+            <div class="card-body text-center">
+                <h3 class="text-danger mb-0">{{ (users|length - users|selectattr('phone')|list|length) }}</h3>
+                <p class="text-muted mb-0">No Phone</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Activity Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="activity-stat">
+                            <i class="fas fa-suitcase fa-2x text-primary mb-2"></i>
+                            <h4 class="text-primary mb-1">150+</h4>
+                            <small class="text-muted">Total Bookings</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="activity-stat">
+                            <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                            <h4 class="text-warning mb-1">4.8/5</h4>
+                            <small class="text-muted">Avg Rating</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="activity-stat">
+                            <i class="fas fa-comments fa-2x text-info mb-2"></i>
+                            <h4 class="text-info mb-1">89</h4>
+                            <small class="text-muted">Reviews Given</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="activity-stat">
+                            <i class="fas fa-indian-rupee-sign fa-2x text-success mb-2"></i>
+                            <h4 class="text-success mb-1">₹2.5L+</h4>
+                            <small class="text-muted">Total Revenue</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-users"></i> All Users ({{ users|length }})
+            <small class="ms-2 opacity-75">{{ users|selectattr('user_type', 'equalto', 'user')|list|length }} users, {{ users|selectattr('user_type', 'equalto', 'admin')|list|length }} admins</small>
+        </h5>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-light text-dark me-2" id="visibleCount">{{ users|length }}</span>
+            <span class="text-light">users visible</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if users %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>User Info</th>
+                        <th>Contact</th>
+                        <th>Role</th>
+                        <th>Registration</th>
+                        <th>Status</th>
+                        <th>Bookings</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="user-row" data-user-id="{{ user.id }}" data-role="{{ user.user_type }}" data-status="active">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                     style="width: 45px; height: 45px; font-weight: bold;">
+                                    {{ (user.full_name or user.username)[0]|upper }}
+                                </div>
+                                <div>
+                                    <strong class="d-block">{{ user.full_name or 'No Name' }}</strong>
+                                    <small class="text-muted">@{{ user.username }}</small>
+                                    <br>
+                                    <small class="text-muted">ID: {{ user.id }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <div class="mb-1">
+                                    <i class="fas fa-envelope text-muted me-2"></i>
+                                    <small>{{ user.email }}</small>
+                                </div>
+                                {% if user.phone %}
+                                <div>
+                                    <i class="fas fa-phone text-muted me-2"></i>
+                                    <small>{{ user.phone }}</small>
+                                </div>
+                                {% else %}
+                                <div>
+                                    <i class="fas fa-phone-slash text-muted me-2"></i>
+                                    <small class="text-warning">No phone</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if user.user_type == 'admin' %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-crown"></i> Administrator
+                            </span>
+                            {% else %}
+                            <span class="badge bg-primary">
+                                <i class="fas fa-user"></i> Regular User
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>
+                                <small class="text-muted d-block">{{ user.created_at.strftime('%d %b %Y') }}</small>
+                                <small class="text-muted">{{ user.created_at.strftime('%H:%M') }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> Active
+                            </span>
+                        </td>
+                        <td>
+                            <div class="text-center">
+                                <span class="badge bg-secondary">{{ range(0, 15)|random }}</span>
+                                <br>
+                                <small class="text-muted">bookings</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary view-user" 
+                                        data-user-id="{{ user.id }}"
+                                        data-user-data='{{ user|tojson }}'
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                
+                                <button class="btn btn-outline-info edit-user" 
+                                        data-user-id="{{ user.id }}"
+                                        title="Edit User">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                
+                                {% if user.user_type == 'user' and user.id != session.user_id %}
+                                <button class="btn btn-outline-warning make-admin" 
+                                        data-user-id="{{ user.id }}"
+                                        data-user-name="{{ user.full_name or user.username }}"
+                                        title="Make Admin">
+                                    <i class="fas fa-user-shield"></i>
+                                </button>
+                                {% endif %}
+                                
+                                {% if user.user_type == 'admin' and user.id != session.user_id %}
+                                <button class="btn btn-outline-secondary revoke-admin" 
+                                        data-user-id="{{ user.id }}"
+                                        data-user-name="{{ user.full_name or user.username }}"
+                                        title="Revoke Admin">
+                                    <i class="fas fa-user"></i>
+                                </button>
+                                {% endif %}
+                                
+                                {% if user.id != session.user_id %}
+                                <button class="btn btn-outline-danger delete-user" 
+                                        data-user-id="{{ user.id }}"
+                                        data-user-name="{{ user.full_name or user.username }}"
+                                        title="Delete User">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% else %}
+                                <button class="btn btn-outline-dark" disabled title="Current User">
+                                    <i class="fas fa-user"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+            <h4>No Users Found</h4>
+            <p class="text-muted">No users have registered yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userModalBody">
+                <!-- User details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="editUserBtn">Edit User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editUserModalBody">
+                <!-- Edit form will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Make Admin Modal -->
+<div class="modal fade" id="adminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Make Administrator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to make "<strong id="adminUserName"></strong>" an administrator?</p>
+                <p class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Warning:</strong> This user will have full access to:
+                </p>
+                <ul class="small text-muted">
+                    <li>Admin dashboard and analytics</li>
+                    <li>Package management (create, edit, delete)</li>
+                    <li>User management</li>
+                    <li>Booking management</li>
+                    <li>System settings</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmMakeAdmin" class="btn btn-warning">Make Admin</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revoke Admin Modal -->
+<div class="modal fade" id="revokeAdminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Revoke Administrator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to revoke administrator privileges from "<strong id="revokeAdminUserName"></strong>"?</p>
+                <p class="text-info">
+                    <i class="fas fa-info-circle"></i>
+                    This user will become a regular user and lose access to admin features.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmRevokeAdmin" class="btn btn-info">Revoke Admin</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user "<strong id="deleteUserName"></strong>"?</p>
+                <p class="text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>This action cannot be undone!</strong> The following data will be permanently deleted:
+                </p>
+                <ul class="small text-muted">
+                    <li>User account and profile</li>
+                    <li>All bookings made by this user</li>
+                    <li>All feedback and reviews</li>
+                    <li>User preferences and settings</li>
+                </ul>
+                <div class="alert alert-danger mt-3">
+                    <i class="fas fa-radiation"></i>
+                    <strong>Critical:</strong> This may affect booking statistics and revenue reports.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmUserDelete" class="btn btn-danger">Delete User</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userModal = new bootstrap.Modal(document.getElementById('userModal'));
+    const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    const adminModal = new bootstrap.Modal(document.getElementById('adminModal'));
+    const revokeAdminModal = new bootstrap.Modal(document.getElementById('revokeAdminModal'));
+    const deleteUserModal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+    
+    let currentEditingUserId = null;
+
+    // View user details
+    document.querySelectorAll('.view-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const userData = JSON.parse(this.getAttribute('data-user-data'));
+            const modalBody = document.getElementById('userModalBody');
+            
+            // Generate user stats (simulated)
+            const userStats = {
+                bookings: Math.floor(Math.random() * 15),
+                totalSpent: Math.floor(Math.random() * 50000) + 5000,
+                reviews: Math.floor(Math.random() * 10),
+                joinedDays: Math.floor((new Date() - new Date(userData.created_at)) / (1000 * 60 * 60 * 24))
+            };
+            
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="user-avatar-large bg-primary text-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
+                             style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold;">
+                            ${(userData.full_name || userData.username)[0].toUpperCase()}
+                        </div>
+                        <h5>${userData.full_name || 'No Name Provided'}</h5>
+                        <p class="text-muted mb-2">@${userData.username}</p>
+                        ${userData.user_type === 'admin' ? 
+                            '<span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> Administrator</span>' : 
+                            '<span class="badge bg-primary"><i class="fas fa-user"></i> Regular User</span>'}
+                    </div>
+                    <div class="col-md-8">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center p-2">
+                                        <h6 class="text-primary mb-0">${userStats.bookings}</h6>
+                                        <small class="text-muted">Bookings</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center p-2">
+                                        <h6 class="text-success mb-0">₹${userStats.totalSpent}</h6>
+                                        <small class="text-muted">Total Spent</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Email:</strong></td>
+                                <td>${userData.email}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Phone:</strong></td>
+                                <td>${userData.phone || '<span class="text-warning">Not provided</span>'}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Registered:</strong></td>
+                                <td>${new Date(userData.created_at).toLocaleDateString()} (${userStats.joinedDays} days ago)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>User ID:</strong></td>
+                                <td><code>${userData.id}</code></td>
+                            </tr>
+                        </table>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>User Activity:</strong> ${userStats.reviews} reviews given, ${userStats.bookings} bookings made.
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Set up edit button
+            document.getElementById('editUserBtn').onclick = function() {
+                userModal.hide();
+                openEditUserModal(userData);
+            };
+            
+            userModal.show();
+        });
+    });
+
+    // Edit user
+    document.querySelectorAll('.edit-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const userData = JSON.parse(this.closest('.user-row').querySelector('.view-user').getAttribute('data-user-data'));
+            openEditUserModal(userData);
+        });
+    });
+
+    function openEditUserModal(userData) {
+        currentEditingUserId = userData.id;
+        const modalBody = document.getElementById('editUserModalBody');
+        
+        modalBody.innerHTML = `
+            <form id="editUserForm">
+                <input type="hidden" name="user_id" value="${userData.id}">
+                
+                <div class="mb-3">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-control" name="full_name" value="${userData.full_name || ''}" 
+                           placeholder="Enter full name">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-control" name="email" value="${userData.email}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" name="phone" value="${userData.phone || ''}" 
+                           placeholder="Enter phone number">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">User Role</label>
+                    <select class="form-select" name="user_type">
+                        <option value="user" ${userData.user_type === 'user' ? 'selected' : ''}>Regular User</option>
+                        <option value="admin" ${userData.user_type === 'admin' ? 'selected' : ''}>Administrator</option>
+                    </select>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Changing user role will immediately affect their access permissions.
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                </div>
+            </form>
+        `;
+        
+        // Handle form submission
+        document.getElementById('editUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveUserChanges(this);
+        });
+        
+        editUserModal.show();
+    }
+
+    function saveUserChanges(form) {
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+        
+        // Simulate API call
+        setTimeout(() => {
+            showAlert('User updated successfully!', 'success');
+            editUserModal.hide();
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            
+            // Reload page after a delay to see changes
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }, 1000);
+    }
+
+    // Make admin
+    document.querySelectorAll('.make-admin').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const userName = this.getAttribute('data-user-name');
+            
+            document.getElementById('adminUserName').textContent = userName;
+            document.getElementById('confirmMakeAdmin').href = `/admin/make_admin/${userId}`;
+            
+            adminModal.show();
+        });
+    });
+
+    // Revoke admin
+    document.querySelectorAll('.revoke-admin').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const userName = this.getAttribute('data-user-name');
+            
+            document.getElementById('revokeAdminUserName').textContent = userName;
+            document.getElementById('confirmRevokeAdmin').href = `/admin/revoke_admin/${userId}`;
+            
+            revokeAdminModal.show();
+        });
+    });
+
+    // Delete user
+    document.querySelectorAll('.delete-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const userName = this.getAttribute('data-user-name');
+            
+            document.getElementById('deleteUserName').textContent = userName;
+            document.getElementById('confirmUserDelete').href = `/admin/delete_user/${userId}`;
+            
+            deleteUserModal.show();
+        });
+    });
+
+    // Search and filter functionality
+    const searchInput = document.getElementById('searchUsers');
+    const roleFilter = document.getElementById('roleFilter');
+    const visibleCount = document.getElementById('visibleCount');
+    
+    function filterUsers() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const roleValue = roleFilter.value;
+        
+        const rows = document.querySelectorAll('.user-row');
+        let visibleRows = 0;
+        
+        rows.forEach(row => {
+            const userName = row.cells[0].textContent.toLowerCase();
+            const userEmail = row.cells[1].textContent.toLowerCase();
+            const userRole = row.getAttribute('data-role');
+            
+            const matchesSearch = userName.includes(searchTerm) || userEmail.includes(searchTerm);
+            const matchesRole = !roleValue || userRole === roleValue;
+            
+            if (matchesSearch && matchesRole) {
+                row.style.display = '';
+                visibleRows++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        visibleCount.textContent = visibleRows;
+    }
+    
+    searchInput.addEventListener('input', filterUsers);
+    roleFilter.addEventListener('change', filterUsers);
+
+    // Export users
+    document.getElementById('exportUsersBtn').addEventListener('click', function() {
+        exportUsersToCSV();
+    });
+
+    function exportUsersToCSV() {
+        const rows = document.querySelectorAll('.user-row:not([style*="display: none"])');
+        let csvContent = "User ID,Full Name,Username,Email,Phone,Role,Registration Date\\n";
+        
+        rows.forEach(row => {
+            const cells = row.cells;
+            const userInfo = cells[0].textContent.split('\\n');
+            const contactInfo = cells[1].textContent.split('\\n');
+            const role = cells[2].textContent.trim();
+            const registration = cells[3].textContent.replace(/\\n/g, ' ').trim();
+            
+            const fullName = userInfo[0].trim();
+            const username = userInfo[1].replace('@', '').trim();
+            const email = contactInfo[0].trim();
+            const phone = contactInfo[1] ? contactInfo[1].trim() : 'No Phone';
+            
+            csvContent += `"${fullName}","${username}","${email}","${phone}","${role}","${registration}"\\n`;
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `TourBook_Users_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        showAlert('Users exported to CSV successfully!', 'success');
+    }
+
+    function showAlert(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+
+    // Add hover effects
+    const userRows = document.querySelectorAll('.user-row');
+    userRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(5px)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+});
+</script>
+
+<style>
+.user-row {
+    transition: all 0.3s ease;
+}
+
+.user-row:hover {
+    background-color: #f8f9fa !important;
+}
+
+.stat-card {
+    transition: all 0.3s ease;
+    border-radius: 10px;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.user-avatar {
+    font-size: 1.2rem;
+}
+
+.user-avatar-large {
+    font-size: 2rem !important;
+}
+
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.text-purple {
+    color: #6f42c1 !important;
+}
+
+.border-purple {
+    border-left-color: #6f42c1 !important;
+}
+
+.activity-stat {
+    padding: 10px;
+}
+
+.activity-stat:hover {
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+.btn-group-sm .btn {
+    padding: 0.3rem 0.5rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+.user-avatar-large {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.border-start {
+    border-left-width: 4px !important;
+}
+</style>
+{% endblock %}

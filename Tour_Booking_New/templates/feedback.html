@@ -1,0 +1,706 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback - TourBook{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="welcome-banner bg-gradient-warning text-dark p-4 rounded mb-4">
+            <h1><i class="fas fa-comments"></i> Share Your Experience</h1>
+            <p class="mb-0">Your feedback helps us improve and helps other travelers make better decisions!</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Submit Feedback Section -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-edit"></i> Submit New Feedback</h5>
+            </div>
+            <div class="card-body">
+                {% if bookings %}
+                <div class="row" id="feedbackForms">
+                    {% for booking in bookings %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card feedback-form-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start mb-3">
+                                    {% if booking.image_url %}
+                                    <img src="{{ booking.image_url }}" alt="{{ booking.package_name }}" 
+                                         class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;"
+                                         onerror="this.src='https://via.placeholder.com/60x60/007bff/ffffff?text=Package'">
+                                    {% else %}
+                                    <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                         style="width: 60px; height: 60px;">
+                                        <i class="fas fa-map-marked-alt text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-1">{{ booking.package_name }}</h6>
+                                        <p class="text-muted mb-1 small">
+                                            <i class="fas fa-map-marker-alt"></i> {{ booking.destination }}
+                                        </p>
+                                        <small class="text-muted">
+                                            Booked on {{ booking.booking_date.strftime('%d %b %Y') }}
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <form method="POST" action="{{ url_for('submit_feedback') }}" class="feedback-form">
+                                    <input type="hidden" name="package_id" value="{{ booking.package_id }}">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Your Rating *</label>
+                                        <div class="star-rating mb-2" data-package="{{ booking.package_id }}">
+                                            {% for i in range(1, 6) %}
+                                            <span class="star" data-rating="{{ i }}" data-package="{{ booking.package_id }}">
+                                                <i class="far fa-star"></i>
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                        <input type="hidden" name="rating" id="rating-input-{{ booking.package_id }}" value="" required>
+                                        <div class="rating-text text-muted small" id="rating-text-{{ booking.package_id }}">
+                                            ⭐ Click stars to select rating (1-5)
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Your Experience *</label>
+                                        <textarea class="form-control" name="comment" rows="3" 
+                                                  placeholder="Share your experience with this tour package... 
+What did you enjoy most? 
+Any suggestions for improvement?"
+                                                  maxlength="500" required></textarea>
+                                        <div class="form-text">
+                                            <span class="char-count">0</span>/500 characters
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-paper-plane"></i> Submit Feedback
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
+                    <h5>No Packages Awaiting Feedback</h5>
+                    <p class="text-muted">You've provided feedback for all your completed bookings.</p>
+                    <p class="text-muted">Book more tours to share your experiences!</p>
+                    <a href="{{ url_for('packages') }}" class="btn btn-primary">
+                        <i class="fas fa-map-marked-alt"></i> Explore Packages
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- AI Feedback Assistant -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-robot"></i> Feedback Assistant</h5>
+            </div>
+            <div class="card-body">
+                <div class="ai-suggestions">
+                    <h6><i class="fas fa-lightbulb text-warning"></i> Tips for Great Feedback:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Be Specific:</strong> Mention particular guides, activities, or moments
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Highlight Positives:</strong> What made your experience special?
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Constructive Criticism:</strong> Suggest improvements politely
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Include Details:</strong> Weather, group size, unexpected highlights
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="ai-feedback-preview mt-3 p-3 bg-light rounded">
+                    <h6><i class="fas fa-eye text-primary"></i> Feedback Preview</h6>
+                    <div id="feedbackPreview" class="small text-muted">
+                        Your feedback will appear here as you type...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Previous Feedback & Statistics -->
+    <div class="col-lg-4">
+        <!-- Feedback Statistics -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Your Feedback Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    {% set avg_rating = (feedback|selectattr('rating')|map(attribute='rating')|list|sum / feedback|length if feedback else 0) %}
+                    <div class="feedback-score display-4 text-primary mb-2">
+                        {{ "%.1f"|format(avg_rating) if feedback else "0.0" }}
+                    </div>
+                    <div class="rating-stars mb-2 justify-content-center">
+                        {% set avg_rating_int = avg_rating|round|int if feedback else 0 %}
+                        {% for i in range(1, 6) %}
+                            {% if i <= avg_rating_int %}
+                                <i class="fas fa-star text-warning"></i>
+                            {% else %}
+                                <i class="far fa-star text-muted"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <p class="text-muted mb-0">Average Rating</p>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="stat-number text-primary">{{ feedback|length }}</div>
+                        <small class="text-muted">Total Reviews</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-number text-success">
+                            {{ feedback|selectattr('rating', '>=', 4)|list|length }}
+                        </div>
+                        <small class="text-muted">Positive</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-number text-warning">
+                            {{ feedback|selectattr('rating', '==', 3)|list|length }}
+                        </div>
+                        <small class="text-muted">Neutral</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Previous Feedback -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Your Previous Feedback</h5>
+            </div>
+            <div class="card-body">
+                {% if feedback %}
+                <div class="feedback-history">
+                    {% for item in feedback[:5] %}
+                    <div class="feedback-item mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ item.package_name }}</h6>
+                            <div class="rating-stars">
+                                {% for i in range(1, 6) %}
+                                    {% if i <= item.rating %}
+                                        <i class="fas fa-star text-warning fa-xs"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-muted fa-xs"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-1">{{ item.comment[:100] }}{% if item.comment|length > 100 %}...{% endif %}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-calendar"></i> {{ item.created_at.strftime('%d %b %Y') }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if feedback|length > 5 %}
+                    <div class="text-center">
+                        <small class="text-muted">
+                            And {{ feedback|length - 5 }} more reviews...
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                    <p>No feedback submitted yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Community Impact -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Community Impact</h5>
+            </div>
+            <div class="card-body">
+                <div class="impact-stats">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-eye text-primary me-3 fa-lg"></i>
+                        <div>
+                            <div class="fw-bold">500+ Views</div>
+                            <small class="text-muted">Your reviews help other travelers</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-thumbs-up text-success me-3 fa-lg"></i>
+                        <div>
+                            <div class="fw-bold">Helpful Feedback</div>
+                            <small class="text-muted">Your suggestions improve our services</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-award text-warning me-3 fa-lg"></i>
+                        <div>
+                            <div class="fw-bold">Trusted Reviewer</div>
+                            <small class="text-muted">Building reputation in our community</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5>Thank You!</h5>
+                <p class="text-muted">Your feedback has been submitted successfully.</p>
+                <button type="button" class="btn btn-success w-100" data-bs-dismiss="modal">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing star rating system...');
+
+    // SIMPLE STAR RATING - GUARANTEED TO WORK
+    function initializeStarRatings() {
+        document.querySelectorAll('.star').forEach(star => {
+            // Remove any existing event listeners
+            star.replaceWith(star.cloneNode(true));
+        });
+
+        // Re-attach event listeners
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const rating = parseInt(this.getAttribute('data-rating'));
+                const packageId = this.getAttribute('data-package');
+                
+                console.log('⭐ Star clicked - Rating:', rating, 'Package:', packageId);
+                
+                // Get all elements for this package
+                const stars = document.querySelectorAll(`.star[data-package="${packageId}"]`);
+                const ratingInput = document.getElementById(`rating-input-${packageId}`);
+                const ratingText = document.getElementById(`rating-text-${packageId}`);
+                
+                // Update all stars visually
+                stars.forEach(s => {
+                    const starRating = parseInt(s.getAttribute('data-rating'));
+                    const icon = s.querySelector('i');
+                    
+                    if (starRating <= rating) {
+                        // Selected star - filled and yellow
+                        icon.className = 'fas fa-star';
+                        icon.style.color = '#ffc107';
+                        icon.style.textShadow = '0 0 8px rgba(255,193,7,0.7)';
+                        s.style.transform = 'scale(1.1)';
+                    } else {
+                        // Unselected star - empty and gray
+                        icon.className = 'far fa-star';
+                        icon.style.color = '#ddd';
+                        icon.style.textShadow = 'none';
+                        s.style.transform = 'scale(1)';
+                    }
+                });
+                
+                // Update hidden input value
+                if (ratingInput) {
+                    ratingInput.value = rating;
+                    console.log('✅ Rating set to:', rating, 'in input:', ratingInput.id);
+                }
+                
+                // Update rating text
+                const ratingMessages = {
+                    1: "⭐ Poor - We're sorry to hear that",
+                    2: "⭐⭐ Fair - Thanks for your honest feedback", 
+                    3: "⭐⭐⭐ Good - Glad you had a decent experience",
+                    4: "⭐⭐⭐⭐ Very Good - Happy to hear you enjoyed it!",
+                    5: "⭐⭐⭐⭐⭐ Excellent - Wonderful! Thanks for the perfect rating!"
+                };
+                
+                if (ratingText) {
+                    ratingText.textContent = ratingMessages[rating] || `${rating} stars selected`;
+                    ratingText.className = 'rating-text small fw-bold ' + 
+                        (rating <= 2 ? 'text-danger' : rating <= 3 ? 'text-warning' : 'text-success');
+                }
+            });
+            
+            // Hover effects
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.getAttribute('data-rating'));
+                const packageId = this.getAttribute('data-package');
+                const stars = document.querySelectorAll(`.star[data-package="${packageId}"]`);
+                const ratingInput = document.getElementById(`rating-input-${packageId}`);
+                const currentRating = ratingInput ? ratingInput.value : '';
+                
+                // Only show hover if no rating selected
+                if (!currentRating) {
+                    stars.forEach(s => {
+                        const starRating = parseInt(s.getAttribute('data-rating'));
+                        const icon = s.querySelector('i');
+                        
+                        if (starRating <= rating) {
+                            icon.style.color = '#ffc107';
+                            icon.style.transform = 'scale(1.2)';
+                        }
+                    });
+                }
+            });
+            
+            star.addEventListener('mouseleave', function() {
+                const packageId = this.getAttribute('data-package');
+                const stars = document.querySelectorAll(`.star[data-package="${packageId}"]`);
+                const ratingInput = document.getElementById(`rating-input-${packageId}`);
+                const currentRating = ratingInput ? ratingInput.value : '';
+                
+                // Reset to actual selection state
+                stars.forEach(s => {
+                    const starRating = parseInt(s.getAttribute('data-rating'));
+                    const icon = s.querySelector('i');
+                    
+                    if (!currentRating) {
+                        // No rating selected - all gray
+                        icon.style.color = '#ddd';
+                        icon.style.transform = 'scale(1)';
+                    } else {
+                        // Rating selected - show selected stars as yellow
+                        if (starRating <= currentRating) {
+                            icon.style.color = '#ffc107';
+                            icon.style.transform = 'scale(1.1)';
+                        } else {
+                            icon.style.color = '#ddd';
+                            icon.style.transform = 'scale(1)';
+                        }
+                    }
+                });
+            });
+        });
+        
+        console.log('✅ Star ratings initialized successfully!');
+    }
+
+    // Initialize star ratings
+    initializeStarRatings();
+
+    // Character count for comments
+    const textareas = document.querySelectorAll('textarea[name="comment"]');
+    textareas.forEach(textarea => {
+        const charCount = textarea.closest('.mb-3').querySelector('.char-count');
+        
+        textarea.addEventListener('input', function() {
+            const length = this.value.length;
+            if (charCount) {
+                charCount.textContent = length;
+                
+                if (length > 400) {
+                    charCount.className = 'char-count text-danger fw-bold';
+                } else if (length > 300) {
+                    charCount.className = 'char-count text-warning';
+                } else {
+                    charCount.className = 'char-count text-muted';
+                }
+            }
+            
+            updateFeedbackPreview(this);
+        });
+    });
+
+    // Feedback preview
+    function updateFeedbackPreview(textarea) {
+        const preview = document.getElementById('feedbackPreview');
+        if (preview && textarea.value.trim()) {
+            preview.innerHTML = `
+                <div class="bg-white p-2 rounded border">
+                    <strong>Preview:</strong><br>
+                    ${textarea.value}
+                </div>
+            `;
+        } else if (preview) {
+            preview.innerHTML = 'Your feedback will appear here as you type...';
+        }
+    }
+
+    // FORM SUBMISSION - WITH PROPER VALIDATION
+    const feedbackForms = document.querySelectorAll('.feedback-form');
+    feedbackForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const ratingInput = this.querySelector('input[name="rating"]');
+            const comment = this.querySelector('textarea[name="comment"]');
+            
+            console.log('📝 Form submitting...');
+            console.log('   Rating value:', ratingInput ? ratingInput.value : 'null');
+            console.log('   Comment length:', comment ? comment.value.length : 'null');
+            
+            // CRITICAL: Validate rating is selected
+            if (!ratingInput || !ratingInput.value || ratingInput.value === '') {
+                e.preventDefault();
+                console.log('❌ No rating selected - preventing submission');
+                
+                // Show clear error message
+                showAlert('⚠️ Please click on the stars to select a rating (1-5 stars) before submitting.', 'danger');
+                
+                // Highlight stars to show they're required
+                const stars = this.querySelectorAll('.star i');
+                stars.forEach(star => {
+                    star.style.animation = 'pulse 0.5s 3';
+                });
+                return;
+            }
+            
+            // Validate comment
+            if (!comment || !comment.value.trim()) {
+                e.preventDefault();
+                console.log('❌ No comment - preventing submission');
+                showAlert('📝 Please share your experience in the comments before submitting.', 'warning');
+                return;
+            }
+            
+            // Validate rating is a number between 1-5
+            const rating = parseInt(ratingInput.value);
+            if (isNaN(rating) || rating < 1 || rating > 5) {
+                e.preventDefault();
+                console.log('❌ Invalid rating value:', ratingInput.value);
+                showAlert('❌ Please select a valid rating between 1-5 stars.', 'danger');
+                return;
+            }
+            
+            console.log('✅ Form validation passed - allowing submission');
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                submitBtn.disabled = true;
+            }
+            
+            // Allow form to submit normally
+        });
+    });
+
+    // Check for success parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+        const successModal = document.getElementById('successModal');
+        if (successModal) {
+            const modal = new bootstrap.Modal(successModal);
+            modal.show();
+        } else {
+            showAlert('✅ Feedback submitted successfully!', 'success');
+        }
+    }
+    
+    console.log('🎉 Feedback page fully loaded!');
+});
+
+// Alert function
+function showAlert(message, type = 'info') {
+    // Remove any existing alerts first
+    const existingAlerts = document.querySelectorAll('.alert-dismissible');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas ${type === 'danger' ? 'fa-exclamation-triangle' : type === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle'} me-2"></i>
+            <div>${message}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Test function to verify stars are working
+function testStarRating() {
+    console.log('🧪 Testing star ratings...');
+    const stars = document.querySelectorAll('.star');
+    console.log('   Found', stars.length, 'stars');
+    
+    stars.forEach((star, index) => {
+        console.log(`   Star ${index + 1}:`, {
+            rating: star.getAttribute('data-rating'),
+            package: star.getAttribute('data-package')
+        });
+    });
+}
+
+// Run test after page load
+setTimeout(testStarRating, 1000);
+</script>
+
+<style>
+.feedback-form-card {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.feedback-form-card:hover {
+    border-color: #3498db;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+}
+
+.star-rating {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding: 15px 0;
+}
+
+.star-rating .star {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 2.2rem;
+    padding: 8px;
+    border-radius: 50%;
+}
+
+.star-rating .star:hover {
+    transform: scale(1.3);
+    background: rgba(255,193,7,0.1);
+}
+
+.star-rating .star i {
+    transition: all 0.3s ease;
+    display: block;
+}
+
+/* GUARANTEED STAR COLORS */
+.star-rating .star i.fas {
+    color: #ffc107 !important;
+    text-shadow: 0 0 12px rgba(255,193,7,0.8);
+}
+
+.star-rating .star i.far {
+    color: #ddd !important;
+}
+
+/* Pulse animation for required field */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.feedback-score {
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.feedback-item {
+    transition: all 0.3s ease;
+}
+
+.feedback-item:hover {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+    margin: -10px -10px 5px -10px;
+}
+
+.impact-stats i {
+    width: 24px;
+    text-align: center;
+}
+
+.char-count {
+    font-weight: bold;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .feedback-form-card {
+        margin-bottom: 1rem;
+    }
+    
+    .star-rating {
+        gap: 8px;
+    }
+    
+    .star-rating .star {
+        font-size: 1.8rem;
+        padding: 6px;
+    }
+    
+    .stat-number {
+        font-size: 1.25rem;
+    }
+}
+
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.rating-stars {
+    display: flex;
+    align-items: center;
+}
+
+.rating-text {
+    font-weight: 500;
+    text-align: center;
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #f8f9fa;
+}
+
+/* Required field indicator */
+.form-label.fw-bold::after {
+    content: " *";
+    color: #dc3545;
+}
+</style>
+{% endblock %}

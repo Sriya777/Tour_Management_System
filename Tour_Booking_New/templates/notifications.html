@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - TourBook{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-bell text-primary"></i> Notifications</h1>
+                <div>
+                    <span class="badge bg-primary fs-6">{{ unread_count }} unread</span>
+                    {% if unread_count > 0 %}
+                    <button class="btn btn-sm btn-outline-primary ms-2" id="markAllRead">
+                        <i class="fas fa-check-double"></i> Mark All Read
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if notifications %}
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for notification in notifications %}
+                        <div class="list-group-item {% if not notification.is_read %}bg-light{% endif %} notification-item"
+                             data-notification-id="{{ notification.id }}">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <h6 class="mb-0 {% if not notification.is_read %}fw-bold{% endif %}">
+                                            {{ notification.title }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            {{ notification.created_at.strftime('%b %d, %Y %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    <p class="mb-2 text-muted">{{ notification.message }}</p>
+                                    {% if notification.related_entity_type and notification.related_entity_id %}
+                                    <div class="mt-2">
+                                        {% if notification.related_entity_type == 'booking' %}
+                                        <a href="{{ url_for('booking_details', booking_id=notification.related_entity_id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            View Booking
+                                        </a>
+                                        {% elif notification.related_entity_type == 'package' %}
+                                        <a href="{{ url_for('package_detail', package_id=notification.related_entity_id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            View Package
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ms-3">
+                                    {% if not notification.is_read %}
+                                    <span class="badge bg-primary">New</span>
+                                    {% endif %}
+                                    <i class="fas fa-{{ 
+                                        'text-success' if notification.type == 'booking' else 
+                                        'text-warning' if notification.type == 'promotion' else 
+                                        'text-info' if notification.type == 'system' else 
+                                        'text-secondary' 
+                                    }} fa-{{ 
+                                        'receipt' if notification.type == 'booking' else 
+                                        'tag' if notification.type == 'promotion' else 
+                                        'cog' if notification.type == 'system' else 
+                                        'bell' 
+                                    }} mt-1"></i>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Notifications pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page - 1 }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page + 1 }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash fa-4x text-muted mb-3"></i>
+                    <h3>No notifications yet</h3>
+                    <p class="text-muted">We'll notify you about important updates, bookings, and promotions.</p>
+                    <a href="{{ url_for('packages') }}" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Explore Packages
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mark notification as read when clicked
+    document.querySelectorAll('.notification-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const notificationId = this.getAttribute('data-notification-id');
+            const isRead = !this.classList.contains('bg-light');
+            
+            if (!isRead) {
+                fetch('/notifications/mark-read', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        notification_id: notificationId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        this.classList.remove('bg-light');
+                        this.querySelector('.badge').remove();
+                        this.querySelector('h6').classList.remove('fw-bold');
+                        
+                        // Update unread count
+                        const unreadCount = document.querySelector('.badge.bg-primary');
+                        if (unreadCount) {
+                            const newCount = parseInt(unreadCount.textContent) - 1;
+                            if (newCount > 0) {
+                                unreadCount.textContent = newCount;
+                            } else {
+                                unreadCount.remove();
+                                document.getElementById('markAllRead').remove();
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+    });
+
+    // Mark all as read
+    document.getElementById('markAllRead')?.addEventListener('click', function() {
+        fetch('/notifications/mark-all-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI
+                document.querySelectorAll('.notification-item').forEach(item => {
+                    item.classList.remove('bg-light');
+                    const badge = item.querySelector('.badge');
+                    if (badge) badge.remove();
+                    item.querySelector('h6').classList.remove('fw-bold');
+                });
+                
+                // Remove unread count and button
+                const unreadBadge = document.querySelector('.badge.bg-primary');
+                if (unreadBadge) unreadBadge.remove();
+                this.remove();
+                
+                showAlert('All notifications marked as read', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error marking notifications as read', 'danger');
+        });
+    });
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} me-2"></i>
+            <div>${message}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 3000);
+}
+</script>
+
+<style>
+.notification-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    border-bottom: 1px solid #e9ecef !important;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+.notification-item:last-child {
+    border-bottom: none !important;
+}
+
+.empty-state {
+    padding: 3rem 1rem;
+}
+
+.empty-state i {
+    opacity: 0.5;
+}
+
+.list-group-item {
+    padding: 1.25rem;
+}
+
+.badge {
+    font-size: 0.7rem;
+}
+</style>
+{% endblock %}

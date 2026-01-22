@@ -1,0 +1,808 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - TourBook{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="admin-header bg-gradient-warning text-dark p-4 rounded mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold">
+                        <i class="fas fa-crown"></i> Admin Dashboard
+                    </h1>
+                    <p class="lead mb-0">Manage your tour booking platform efficiently</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="admin-quick-actions">
+                        <a href="{{ url_for('add_package') }}" class="btn btn-dark me-2">
+                            <i class="fas fa-plus"></i> Add Package
+                        </a>
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-outline-dark">
+                            <i class="fas fa-users"></i> Manage Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Alerts -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-bell"></i> Real-time Alerts</h5>
+                <span class="badge bg-danger" id="alertCount">{{ alerts|length }}</span>
+            </div>
+            <div class="card-body" id="alertsContainer">
+                {% if alerts %}
+                    {% for alert in alerts %}
+                    <div class="alert alert-{{ alert.type }} alert-dismissible fade show mb-2">
+                        <i class="fas fa-{{ alert.icon }} me-2"></i>
+                        {{ alert.message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <p class="mb-0">No active alerts</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Quick Stats -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card admin-stat-card border-start border-primary border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted fw-semibold">Total Users</h6>
+                        <h2 class="mb-0 fw-bold text-primary" data-stat="users">{{ total_users }}</h2>
+                        <small class="text-muted">Registered travelers</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users fa-2x text-primary"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-primary">Manage</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card admin-stat-card border-start border-success border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted fw-semibold">Total Revenue</h6>
+                        <h2 class="mb-0 fw-bold text-success" data-stat="revenue">₹{{ total_revenue }}</h2>
+                        <small class="text-muted">Lifetime earnings</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-money-bill-wave fa-2x text-success"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% if detailed_revenue|length > 1 %}
+                    <span class="badge bg-success">
+                        +{{ ((detailed_revenue[0].revenue - detailed_revenue[1].revenue) / detailed_revenue[1].revenue * 100)|round|int }}% growth
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card admin-stat-card border-start border-info border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted fw-semibold">Total Bookings</h6>
+                        <h2 class="mb-0 fw-bold text-info" data-stat="bookings">{{ total_bookings }}</h2>
+                        <small class="text-muted">All-time bookings</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-suitcase fa-2x text-info"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('admin_bookings') }}" class="btn btn-sm btn-outline-info">View All</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card admin-stat-card border-start border-warning border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted fw-semibold">Active Packages</h6>
+                        <h2 class="mb-0 fw-bold text-warning" data-stat="packages">{{ total_packages }}</h2>
+                        <small class="text-muted">Available tours</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-box fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('admin_packages') }}" class="btn btn-sm btn-outline-warning">Manage</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column - Analytics -->
+    <div class="col-lg-8">
+        <!-- Revenue Analytics -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Revenue Analytics</h5>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-light active" data-period="month">Monthly</button>
+                    <button class="btn btn-light" data-period="quarter">Quarterly</button>
+                    <button class="btn btn-light" data-period="year">Yearly</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-success">₹{{ total_revenue }}</h4>
+                            <small class="text-muted">Total Revenue</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-primary">₹{{ detailed_revenue[0].revenue if detailed_revenue else 0 }}</h4>
+                            <small class="text-muted">Current Month</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-warning">
+                                {% if detailed_revenue|length > 1 %}
+                                    {{ ((detailed_revenue[0].revenue - detailed_revenue[1].revenue) / detailed_revenue[1].revenue * 100)|round|int }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </h4>
+                            <small class="text-muted">Growth Rate</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-info">₹{{ (total_revenue / total_bookings)|round if total_bookings > 0 else 0 }}</h4>
+                            <small class="text-muted">Avg. Booking Value</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue Chart -->
+                <div class="revenue-chart-container">
+                    <canvas id="revenueChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Package Performance -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-fire"></i> Package Performance</h5>
+            </div>
+            <div class="card-body">
+                {% if package_performance %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <canvas id="packagePerformanceChart" height="80"></canvas>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Package</th>
+                                <th>Category</th>
+                                <th>Bookings</th>
+                                <th>Revenue</th>
+                                <th>Avg. Rating</th>
+                                <th>Available</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for package in package_performance %}
+                            <tr>
+                                <td>
+                                    <strong>{{ package.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ package.destination }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ package.category }}</span>
+                                </td>
+                                <td>{{ package.booking_count }}</td>
+                                <td class="text-success fw-bold">₹{{ package.total_revenue or 0 }}</td>
+                                <td>
+                                    <div class="rating-stars">
+                                        {% set avg_rating = package.avg_rating or 0 %}
+                                        {% for i in range(1, 6) %}
+                                        <i class="fas fa-star{{ ' text-warning' if i <= avg_rating|round else ' text-muted' }} fa-xs"></i>
+                                        {% endfor %}
+                                        <small class="text-muted ms-1">{{ "%.1f"|format(avg_rating) }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if package.available_slots > 10 else 'warning' if package.available_slots > 0 else 'danger' }}">
+                                        {{ package.available_slots }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <h5>No Package Data</h5>
+                    <p class="text-muted">Package performance data will appear here as bookings are made.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column - Overview -->
+    <div class="col-lg-4">
+        <!-- Booking Status Distribution -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Booking Status</h5>
+            </div>
+            <div class="card-body">
+                {% if booking_stats %}
+                <div class="booking-stats">
+                    {% for stat in booking_stats %}
+                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold">
+                            {% if stat.status == 'confirmed' %}
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            {% elif stat.status == 'pending' %}
+                            <i class="fas fa-clock text-warning me-2"></i>
+                            {% else %}
+                            <i class="fas fa-times-circle text-danger me-2"></i>
+                            {% endif %}
+                            {{ stat.status.title() }}
+                        </span>
+                        <span class="badge bg-secondary">{{ stat.count }}</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar 
+                            {% if stat.status == 'confirmed' %}bg-success
+                            {% elif stat.status == 'pending' %}bg-warning
+                            {% else %}bg-danger{% endif %}" 
+                             style="width: {{ (stat.count / total_bookings * 100) if total_bookings > 0 else 0 }}%">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-receipt fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No booking data</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Customer Growth -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-purple text-white">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Customer Growth</h5>
+            </div>
+            <div class="card-body">
+                {% if customer_growth %}
+                <canvas id="customerGrowthChart" height="120"></canvas>
+                <div class="mt-3 text-center">
+                    <small class="text-muted">
+                        +{{ customer_growth[0].new_users }} new users this month
+                    </small>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-user-plus fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No user growth data</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Recent Bookings</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_bookings %}
+                    {% for booking in recent_bookings[:5] %}
+                    <div class="activity-item mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <div>
+                                <strong>{{ booking.full_name or booking.username }}</strong>
+                                <br>
+                                <small class="text-muted">{{ booking.package_name }}</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if booking.status == 'confirmed' else 'warning' if booking.status == 'pending' else 'danger' }}">
+                                {{ booking.status }}
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> {{ booking.booking_date.strftime('%d %b %H:%M') }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-receipt fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No recent bookings</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Management Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-gradient-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-cogs"></i> Quick Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('add_package') }}" class="text-decoration-none">
+                            <div class="quick-action-card">
+                                <div class="action-icon bg-primary">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <h6 class="mt-2">Add Package</h6>
+                                <small class="text-muted">Create new tour package</small>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_packages') }}" class="text-decoration-none">
+                            <div class="quick-action-card">
+                                <div class="action-icon bg-success">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <h6 class="mt-2">Manage Packages</h6>
+                                <small class="text-muted">Edit existing packages</small>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_users') }}" class="text-decoration-none">
+                            <div class="quick-action-card">
+                                <div class="action-icon bg-info">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h6 class="mt-2">Manage Users</h6>
+                                <small class="text-muted">View all users</small>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_bookings') }}" class="text-decoration-none">
+                            <div class="quick-action-card">
+                                <div class="action-icon bg-warning">
+                                    <i class="fas fa-receipt"></i>
+                                </div>
+                                <h6 class="mt-2">Manage Bookings</h6>
+                                <small class="text-muted">Process bookings</small>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all charts
+    initRevenueChart();
+    initPackagePerformanceChart();
+    initCustomerGrowthChart();
+    
+    // Initialize real-time updates
+    initRealTimeUpdates();
+    
+    // Add interactive elements
+    initInteractiveFeatures();
+});
+
+function initRevenueChart() {
+    const ctx = document.getElementById('revenueChart');
+    if (!ctx) return;
+    
+    const revenueData = {{ detailed_revenue|tojson }};
+    
+    if (revenueData.length === 0) {
+        ctx.parentElement.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                <h5>No Revenue Data</h5>
+                <p class="text-muted">Revenue data will appear here as bookings are made.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const labels = revenueData.map(item => {
+        const date = new Date(item.month + '-01');
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }).reverse();
+    
+    const revenue = revenueData.map(item => item.revenue || 0).reverse();
+    const bookings = revenueData.map(item => item.booking_count || 0).reverse();
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Revenue (₹)',
+                    data: revenue,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    yAxisID: 'y',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Bookings',
+                    data: bookings,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    yAxisID: 'y1',
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Revenue (₹)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Bookings'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+}
+
+function initPackagePerformanceChart() {
+    const ctx = document.getElementById('packagePerformanceChart');
+    if (!ctx) return;
+    
+    const performanceData = {{ package_performance|tojson }};
+    
+    if (performanceData.length === 0) return;
+    
+    const labels = performanceData.map(p => p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name);
+    const revenue = performanceData.map(p => p.total_revenue || 0);
+    const bookings = performanceData.map(p => p.booking_count || 0);
+    
+    new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Revenue (₹)',
+                    data: revenue,
+                    backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'Bookings',
+                    data: bookings,
+                    backgroundColor: 'rgba(0, 123, 255, 0.8)',
+                    yAxisID: 'y1',
+                    type: 'line',
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Revenue (₹)' }
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    title: { display: true, text: 'Bookings' },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+}
+
+function initCustomerGrowthChart() {
+    const ctx = document.getElementById('customerGrowthChart');
+    if (!ctx) return;
+    
+    const growthData = {{ customer_growth|tojson }};
+    
+    if (growthData.length === 0) return;
+    
+    const labels = growthData.map(item => {
+        const date = new Date(item.month + '-01');
+        return date.toLocaleDateString('en-US', { month: 'short' });
+    }).reverse();
+    
+    const newUsers = growthData.map(item => item.new_users || 0).reverse();
+    const cumulativeUsers = growthData.map(item => item.cumulative_users || 0).reverse();
+    
+    new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'New Users',
+                    data: newUsers,
+                    borderColor: '#6f42c1',
+                    backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Total Users',
+                    data: cumulativeUsers,
+                    borderColor: '#e83e8c',
+                    backgroundColor: 'rgba(232, 62, 140, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function initRealTimeUpdates() {
+    // Update alerts every 30 seconds
+    setInterval(updateAlerts, 30000);
+    
+    // Update stats every minute
+    setInterval(updateDashboardStats, 60000);
+}
+
+function updateAlerts() {
+    fetch('/admin/api/alerts')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('alertsContainer');
+            const alertCount = document.getElementById('alertCount');
+            
+            alertCount.textContent = data.alerts.length;
+            
+            if (data.alerts.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p class="mb-0">No active alerts</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            data.alerts.forEach(alert => {
+                const alertElement = document.createElement('div');
+                alertElement.className = `alert alert-${alert.type} alert-dismissible fade show mb-2`;
+                alertElement.innerHTML = `
+                    <i class="fas fa-${alert.icon} me-2"></i>
+                    ${alert.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                container.appendChild(alertElement);
+            });
+        })
+        .catch(error => console.error('Error updating alerts:', error));
+}
+
+function updateDashboardStats() {
+    fetch('/admin/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            // Update stats cards with animation
+            animateStatUpdate('[data-stat="users"]', data.total_users);
+            animateStatUpdate('[data-stat="revenue"]', '₹' + data.total_revenue);
+            animateStatUpdate('[data-stat="bookings"]', data.total_bookings);
+            animateStatUpdate('[data-stat="packages"]', data.total_packages);
+        })
+        .catch(error => console.error('Error updating stats:', error));
+}
+
+function animateStatUpdate(selector, newValue) {
+    const element = document.querySelector(selector);
+    if (element && element.textContent !== newValue.toString()) {
+        element.style.transform = 'scale(1.1)';
+        element.style.color = '#28a745';
+        setTimeout(() => {
+            element.textContent = newValue;
+            element.style.transform = 'scale(1)';
+            setTimeout(() => {
+                element.style.color = '';
+            }, 1000);
+        }, 300);
+    }
+}
+
+function initInteractiveFeatures() {
+    // Period buttons for revenue chart
+    document.querySelectorAll('[data-period]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            // Here you would typically reload chart data for the selected period
+        });
+    });
+
+    // Quick action card hover effects
+    document.querySelectorAll('.quick-action-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+}
+</script>
+
+<style>
+.admin-header {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.admin-stat-card {
+    transition: all 0.3s ease;
+    border-radius: 15px;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.bg-purple {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.quick-action-card {
+    padding: 20px 10px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.quick-action-card:hover {
+    border-color: #e9ecef;
+    background-color: #f8f9fa;
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.booking-stats .progress {
+    background-color: #e9ecef;
+}
+
+.activity-item {
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+    margin: -10px -10px 5px -10px;
+}
+
+.revenue-chart-container {
+    position: relative;
+    height: 300px;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.border-start {
+    border-left-width: 4px !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .revenue-chart-container {
+        height: 250px;
+    }
+    
+    .admin-stat-card {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}

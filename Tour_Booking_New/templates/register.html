@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Register - TourBook{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-user-plus"></i> Join TourBook</h4>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" id="registerForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" 
+                                       value="{{ form_data.full_name if form_data }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username *</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       value="{{ form_data.username if form_data }}" required>
+                                <div class="form-text">This will be your login username</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ form_data.email if form_data }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ form_data.phone if form_data }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password *</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <div class="form-text">Minimum 6 characters</div>
+                                <div class="mt-1">
+                                    <small id="password-strength" class="badge"></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password *</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                <div class="form-text">Re-enter your password</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Account Type *</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check card role-card">
+                                    <input class="form-check-input" type="radio" name="user_type" id="user_type_user" value="user" 
+                                           {{ 'checked' if not form_data or form_data.user_type == 'user' }}>
+                                    <label class="form-check-label card-body" for="user_type_user">
+                                        <h6><i class="fas fa-user text-primary"></i> Regular User</h6>
+                                        <small class="text-muted">Browse packages, make bookings, and share feedback</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check card role-card">
+                                    <input class="form-check-input" type="radio" name="user_type" id="user_type_admin" value="admin"
+                                           {{ 'checked' if form_data and form_data.user_type == 'admin' }}>
+                                    <label class="form-check-label card-body" for="user_type_admin">
+                                        <h6><i class="fas fa-crown text-warning"></i> Administrator</h6>
+                                        <small class="text-muted">Manage packages, users, and view analytics</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    const strengthBadge = document.getElementById('password-strength');
+
+    // Password strength indicator
+    password.addEventListener('input', function() {
+        const strength = calculatePasswordStrength(this.value);
+        strengthBadge.textContent = strength.text;
+        strengthBadge.className = `badge bg-${strength.color}`;
+    });
+
+    // Real-time password matching
+    confirmPassword.addEventListener('input', function() {
+        if (this.value !== password.value) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+        } else {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+        }
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        let valid = true;
+        const requiredFields = form.querySelectorAll('[required]');
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                valid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+
+        if (password.value.length < 6) {
+            valid = false;
+            password.classList.add('is-invalid');
+            showAlert('Password must be at least 6 characters long.', 'warning');
+        }
+
+        if (password.value !== confirmPassword.value) {
+            valid = false;
+            confirmPassword.classList.add('is-invalid');
+            showAlert('Passwords do not match!', 'warning');
+        }
+
+        if (!valid) {
+            e.preventDefault();
+            showAlert('Please fix the errors before submitting.', 'danger');
+        }
+    });
+
+    // Clear validation on input
+    form.addEventListener('input', function(e) {
+        if (e.target.hasAttribute('required')) {
+            e.target.classList.remove('is-invalid');
+        }
+    });
+});
+
+function calculatePasswordStrength(password) {
+    let strength = 0;
+    
+    if (password.length >= 6) strength++;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    
+    switch(strength) {
+        case 0:
+        case 1:
+        case 2:
+            return { text: 'Weak', color: 'danger' };
+        case 3:
+        case 4:
+            return { text: 'Medium', color: 'warning' };
+        case 5:
+            return { text: 'Strong', color: 'success' };
+        default:
+            return { text: 'Weak', color: 'danger' };
+    }
+}
+
+function showAlert(message, type = 'info') {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert-dismissible');
+    existingAlerts.forEach(alert => alert.remove());
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const cardBody = document.querySelector('.card-body');
+    cardBody.insertBefore(alertDiv, cardBody.firstChild);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+.role-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.role-card:hover {
+    border-color: #28a745;
+    transform: translateY(-2px);
+}
+
+.form-check-input:checked + .card-body {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-radius: 0.375rem;
+}
+
+.is-valid {
+    border-color: #28a745 !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+</style>
+{% endblock %}

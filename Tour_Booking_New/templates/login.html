@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Login - TourBook{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-sign-in-alt"></i> Welcome to TourBook</h4>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">Login</button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p>New to TourBook? <a href="{{ url_for('register') }}">Create an account</a></p>
+                </div>
+
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6>Demo Accounts:</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small><strong>Admin Account:</strong></small><br>
+                            <small>Username: <code>sriya</code></small><br>
+                            <small>Password: <code>sriya123</code></small>
+                        </div>
+                        <div class="col-6">
+                            <small><strong>User Account:</strong></small><br>
+                            <small>Username: <code>shreya</code></small><br>
+                            <small>Password: <code>shreya123</code></small>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Or register a new account with any role!</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

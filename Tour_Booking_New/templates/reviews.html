@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}My Reviews - TourBook{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-star text-warning"></i> My Reviews</h1>
+            <p class="text-muted">Manage your package reviews and feedback</p>
+
+            <div class="row">
+                <!-- Pending Reviews -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="fas fa-clock"></i> Packages to Review</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if pending_reviews %}
+                                {% for booking in pending_reviews %}
+                                <div class="border-bottom pb-3 mb-3">
+                                    <h6>{{ booking.package_name }}</h6>
+                                    <p class="small text-muted mb-2">
+                                        Booked on: {{ booking.booking_date.strftime('%b %d, %Y') }}
+                                    </p>
+                                    <button class="btn btn-sm btn-primary write-review" 
+                                            data-booking-id="{{ booking.id }}"
+                                            data-package-id="{{ booking.package_id }}"
+                                            data-package-name="{{ booking.package_name }}">
+                                        <i class="fas fa-edit"></i> Write Review
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center py-3">No packages pending review</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submitted Reviews -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-check-circle"></i> My Reviews</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if user_reviews %}
+                                {% for review in user_reviews %}
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0">{{ review.package_name }}</h6>
+                                        <div class="star-rating-small">
+                                            {% for i in range(1, 6) %}
+                                            <i class="fas fa-star{% if i > review.rating %} far{% endif %} text-warning"></i>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% if review.title %}
+                                    <p class="fw-bold mb-1">{{ review.title }}</p>
+                                    {% endif %}
+                                    <p class="small mb-2">{{ review.comment }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            {{ review.created_at.strftime('%b %d, %Y') }}
+                                        </small>
+                                        <span class="badge bg-{{ 'success' if review.status == 'approved' else 'warning' if review.status == 'pending' else 'danger' }}">
+                                            {{ review.status|title }}
+                                        </span>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-primary edit-review" 
+                                                data-review-id="{{ review.id }}"
+                                                data-rating="{{ review.rating }}"
+                                                data-title="{{ review.title }}"
+                                                data-comment="{{ review.comment }}">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-review" 
+                                                data-review-id="{{ review.id }}">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center py-3">You haven't submitted any reviews yet</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reviewModalTitle">Write Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm">
+                    <input type="hidden" id="reviewBookingId" name="booking_id">
+                    <input type="hidden" id="reviewPackageId" name="package_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Package</label>
+                        <p class="fw-bold" id="packageNameDisplay"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Rating <span class="text-danger">*</span></label>
+                        <div class="star-rating-modal text-center">
+                            {% for i in range(1, 6) %}
+                            <span class="star-modal" data-rating="{{ i }}">
+                                <i class="far fa-star fa-2x"></i>
+                            </span>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" id="ratingInput" name="rating" required>
+                        <div id="ratingText" class="text-center mt-2 small"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reviewTitle" class="form-label">Review Title</label>
+                        <input type="text" class="form-control" id="reviewTitle" name="title" 
+                               placeholder="Summarize your experience...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reviewComment" class="form-label">Detailed Review <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="reviewComment" name="comment" 
+                                  rows="4" placeholder="Share your experience with this package..." required></textarea>
+                        <div class="form-text">Your review helps other travelers make better decisions.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitReview">Submit Review</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
+    let currentReviewId = null;
+
+    // Write review buttons
+    document.querySelectorAll('.write-review').forEach(button => {
+        button.addEventListener('click', function() {
+            currentReviewId = null;
+            document.getElementById('reviewBookingId').value = this.getAttribute('data-booking-id');
+            document.getElementById('reviewPackageId').value = this.getAttribute('data-package-id');
+            document.getElementById('packageNameDisplay').textContent = this.getAttribute('data-package-name');
+            document.getElementById('reviewModalTitle').textContent = 'Write Review';
+            document.getElementById('reviewForm').reset();
+            resetStars();
+            reviewModal.show();
+        });
+    });
+
+    // Edit review buttons
+    document.querySelectorAll('.edit-review').forEach(button => {
+        button.addEventListener('click', function() {
+            currentReviewId = this.getAttribute('data-review-id');
+            document.getElementById('reviewModalTitle').textContent = 'Edit Review';
+            document.getElementById('ratingInput').value = this.getAttribute('data-rating');
+            document.getElementById('reviewTitle').value = this.getAttribute('data-title');
+            document.getElementById('reviewComment').value = this.getAttribute('data-comment');
+            
+            // Set stars
+            const rating = parseInt(this.getAttribute('data-rating'));
+            setStars(rating);
+            updateRatingText(rating);
+            
+            reviewModal.show();
+        });
+    });
+
+    // Star rating functionality
+    function resetStars() {
+        document.querySelectorAll('.star-modal i').forEach(star => {
+            star.className = 'far fa-star fa-2x';
+            star.style.color = '#ddd';
+        });
+        document.getElementById('ratingInput').value = '';
+        document.getElementById('ratingText').textContent = '';
+    }
+
+    function setStars(rating) {
+        document.querySelectorAll('.star-modal').forEach((star, index) => {
+            const icon = star.querySelector('i');
+            if (index < rating) {
+                icon.className = 'fas fa-star fa-2x';
+                icon.style.color = '#ffc107';
+            } else {
+                icon.className = 'far fa-star fa-2x';
+                icon.style.color = '#ddd';
+            }
+        });
+    }
+
+    function updateRatingText(rating) {
+        const messages = {
+            1: "⭐ Poor",
+            2: "⭐⭐ Fair", 
+            3: "⭐⭐⭐ Good",
+            4: "⭐⭐⭐⭐ Very Good",
+            5: "⭐⭐⭐⭐⭐ Excellent"
+        };
+        document.getElementById('ratingText').textContent = messages[rating] || '';
+    }
+
+    document.querySelectorAll('.star-modal').forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            document.getElementById('ratingInput').value = rating;
+            setStars(rating);
+            updateRatingText(rating);
+        });
+    });
+
+    // Submit review
+    document.getElementById('submitReview').addEventListener('click', function() {
+        const formData = new FormData(document.getElementById('reviewForm'));
+        const rating = document.getElementById('ratingInput').value;
+        
+        if (!rating) {
+            alert('Please select a rating');
+            return;
+        }
+
+        if (!formData.get('comment').trim()) {
+            alert('Please write your review');
+            return;
+        }
+
+        const url = currentReviewId ? '/reviews/update' : '/reviews/submit';
+        const data = {
+            rating: parseInt(rating),
+            title: formData.get('title'),
+            comment: formData.get('comment')
+        };
+
+        if (currentReviewId) {
+            data.review_id = currentReviewId;
+        } else {
+            data.booking_id = formData.get('booking_id');
+            data.package_id = formData.get('package_id');
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                reviewModal.hide();
+                showAlert('Review submitted successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert(result.message || 'Error submitting review', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error submitting review', 'danger');
+        });
+    });
+
+    // Delete review
+    document.querySelectorAll('.delete-review').forEach(button => {
+        button.addEventListener('click', function() {
+            const reviewId = this.getAttribute('data-review-id');
+            if (confirm('Are you sure you want to delete this review?')) {
+                fetch('/reviews/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ review_id: reviewId })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        showAlert('Review deleted successfully', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showAlert(result.message || 'Error deleting review', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Error deleting review', 'danger');
+                });
+            }
+        });
+    });
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} me-2"></i>
+            <div>${message}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 3000);
+}
+</script>
+
+<style>
+.star-rating-small {
+    font-size: 0.8rem;
+}
+
+.star-rating-modal {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.star-modal {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.star-modal:hover {
+    transform: scale(1.2);
+}
+
+.card-header h5 {
+    font-size: 1.1rem;
+}
+
+.btn-sm {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}
